@@ -9,7 +9,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const PORT = 80;
+const PORT = process.env.PORT || 80;
 const ROOM_TTL_MS    = 5 * 60 * 1000;  // 房间无人 5 分钟后销毁
 const PING_INTERVAL  = 25 * 1000;       // 心跳间隔 25s
 const PING_TIMEOUT   = 10 * 1000;       // 未响应 10s 后踢出
