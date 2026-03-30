@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>极简隐私聊天</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ── 设计令牌 ── */
+    :root {
+      --bg:         #0d0d14;
+      --surface:    #13131e;
+      --surface2:   #1a1a28;
+      --surface3:   #1f1f30;
+      --border:     #252538;
+      --border-dim: #1e1e2e;
+      --text:       #e8e8f5;
+      --text-dim:   #6b6b8a;
+      --text-muted: #3d3d58;
+      --accent:     #00e5ff;
+      --accent2:    #c400ff;
+      --accent-dim: #0099bb;
+      --success:    #00e5a0;
+      --glow:       0 0 24px rgba(0,229,255,.45);
+      --glow2:      0 0 24px rgba(196,0,255,.45);
+      --glow-sm:    0 0 12px rgba(0,229,255,.3);
+      --radius-sm:  6px;
+      --radius-md:  12px;
+      --radius-lg:  20px;
+      --transition: .2s cubic-bezier(.4,0,.2,1);
+    }
+
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg:         #f2f3f8;
+        --surface:    #ffffff;
+        --surface2:   #f7f8fc;
+        --surface3:   #eef0f7;
+        --border:     #e0e2ee;
+        --border-dim: #eceff7;
+        --text:       #18192b;
+        --text-dim:   #7a7d9a;
+        --text-muted: #b0b3cc;
+        --accent:     #0099cc;
+        --accent2:    #9900cc;
+        --accent-dim: #0077aa;
+        --success:    #00aa77;
+        --glow:       0 0 16px rgba(0,153,204,.35);
+        --glow2:      0 0 16px rgba(153,0,204,.25);
+        --glow-sm:    0 0 10px rgba(0,153,204,.25);
+      }
+    }
+
+    /* ── 基础 ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── 背景光晕 ── */
+    .bg-glow {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .bg-glow::before {
+      content: '';
+      position: absolute;
+      top: -20%;
+      left: -10%;
+      width: 60%;
+      height: 70%;
+      background: radial-gradient(ellipse, rgba(0,229,255,.07) 0%, transparent 70%);
+      animation: driftA 20s ease-in-out infinite alternate;
+    }
+    .bg-glow::after {
+      content: '';
+      position: absolute;
+      bottom: -20%;
+      right: -10%;
+      width: 60%;
+      height: 70%;
+      background: radial-gradient(ellipse, rgba(196,0,255,.07) 0%, transparent 70%);
+      animation: driftB 24s ease-in-out infinite alternate;
+    }
+    @keyframes driftA { from { transform: translate(0,0) scale(1); } to { transform: translate(5%,3%) scale(1.1); } }
+    @keyframes driftB { from { transform: translate(0,0) scale(1); } to { transform: translate(-4%,-5%) scale(1.08); } }
+
+    /* 网格 */
+    .bg-grid {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background-image:
+        linear-gradient(var(--border-dim) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border-dim) 1px, transparent 1px);
+      background-size: 56px 56px;
+      opacity: .4;
+      mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+    }
+
+    /* ── 主内容 ── */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 20px;
+      gap: 52px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── 徽标 ── */
+    .logo-mark {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      animation: fadeUp .7s ease-out both;
+    }
+    .logo-icon {
+      width: 52px;
+      height: 52px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--glow), var(--glow2);
+      position: relative;
+      flex-shrink: 0;
+    }
+    .logo-icon::before {
+      content: '';
+      position: absolute;
+      inset: -3px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 17px;
+      z-index: -1;
+      filter: blur(14px);
+      opacity: .5;
+    }
+    .logo-icon svg { color: #000; }
+
+    /* ── 标题区 ── */
+    .hero {
+      text-align: center;
+      animation: fadeUp .7s ease-out .1s both;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    .hero-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 2.6rem;
+      font-weight: 700;
+      letter-spacing: 4px;
+      color: var(--accent);
+      text-shadow: var(--glow);
+      text-transform: uppercase;
+      margin-bottom: 14px;
+      line-height: 1.15;
+    }
+    .hero-title span {
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-desc {
+      font-size: .95rem;
+      color: var(--text-dim);
+      line-height: 1.9;
+      max-width: 380px;
+      margin: 0 auto 28px;
+      letter-spacing: .3px;
+    }
+
+    .hero-tags {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .tag {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      font-size: .72rem;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      letter-spacing: 1px;
+      font-family: 'JetBrains Mono', monospace;
+      transition: all var(--transition);
+      cursor: default;
+    }
+    .tag:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      box-shadow: var(--glow-sm);
+      transform: translateY(-1px);
+    }
+    .tag-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: var(--glow-sm);
+      flex-shrink: 0;
+    }
+
+    /* ── 操作卡 ── */
+    .action {
+      width: 100%;
+      max-width: 420px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 32px 28px 28px;
+      animation: fadeUp .7s ease-out .2s both;
+      position: relative;
+      overflow: hidden;
+    }
+    .action::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent), var(--accent2), transparent);
+      opacity: .6;
+    }
+    /* 卡片内部光晕 */
+    .action::after {
+      content: '';
+      position: absolute;
+      top: -60px; left: 50%;
+      transform: translateX(-50%);
+      width: 200px; height: 120px;
+      background: radial-gradient(ellipse, rgba(0,229,255,.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .action-label {
+      font-size: .68rem;
+      color: var(--text-muted);
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      font-family: 'JetBrains Mono', monospace;
+      text-align: center;
+      margin-bottom: 22px;
+    }
+
+    /* 随机按钮 */
+    .btn-random {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #000;
+      border: none;
+      padding: 15px 24px;
+      border-radius: var(--radius-md);
+      font-size: .95rem;
+      font-weight: 700;
+      font-family: 'Inter', system-ui, sans-serif;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: transform var(--transition), box-shadow var(--transition), filter var(--transition);
+      box-shadow: var(--glow), var(--glow2);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 22px;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-random::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0);
+      transition: background var(--transition);
+    }
+    .btn-random:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(0,229,255,.5), 0 8px 32px rgba(196,0,255,.4);
+      filter: brightness(1.05);
+    }
+    .btn-random:hover::before { background: rgba(255,255,255,.08); }
+    .btn-random:active { transform: translateY(0) scale(.98); }
+
+    /* 分割线 */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+    .divider span {
+      font-size: .65rem;
+      color: var(--text-muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-family: 'JetBrains Mono', monospace;
+      white-space: nowrap;
+    }
+
+    /* 输入行 */
+    .custom-row { display: flex; gap: 8px; }
+
+    .custom-input {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 13px 16px;
+      border-radius: var(--radius-md);
+      font-size: .9rem;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 3px;
+      outline: none;
+      transition: border var(--transition), box-shadow var(--transition), background var(--transition);
+      min-width: 0;
+    }
+    .custom-input:focus {
+      border-color: var(--accent);
+      box-shadow: var(--glow-sm);
+      background: var(--surface3);
+    }
+    .custom-input:focus::placeholder { opacity: .4; }
+    .custom-input::placeholder { color: var(--text-muted); letter-spacing: 1px; }
+    .custom-input.error {
+      border-color: #ff3366;
+      box-shadow: 0 0 14px rgba(255,51,102,.4);
+      animation: shake .3s ease;
+    }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      25%      { transform: translateX(-4px); }
+      75%      { transform: translateX(4px); }
+    }
+
+    .btn-go {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 13px 20px;
+      border-radius: var(--radius-md);
+      font-size: .82rem;
+      font-weight: 600;
+      font-family: 'Inter', system-ui, sans-serif;
+      cursor: pointer;
+      transition: all var(--transition);
+      white-space: nowrap;
+      letter-spacing: 1px;
+      flex-shrink: 0;
+    }
+    .btn-go:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #000;
+      box-shadow: var(--glow-sm);
+      transform: translateY(-1px);
+    }
+    .btn-go:active { transform: scale(.97); }
+
+    .hint {
+      font-size: .65rem;
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: 12px;
+      letter-spacing: .5px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* ── 统计栏 ── */
+    .stats {
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+      animation: fadeUp .7s ease-out .35s both;
+    }
+    .stat-item {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .stat-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-shadow: var(--glow-sm);
+    }
+    .stat-label {
+      font-size: .62rem;
+      color: var(--text-muted);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+    .stat-div {
+      width: 1px;
+      background: var(--border);
+      align-self: stretch;
+      margin: 4px 0;
+    }
+
+    /* ── 页脚 ── */
+    .footer {
+      text-align: center;
+      padding: 20px;
+      font-size: .62rem;
+      color: var(--text-muted);
+      letter-spacing: 1.5px;
+      position: relative;
+      z-index: 1;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* ── 响应式 ── */
+    @media (max-width: 480px) {
+      .hero-title { font-size: 2rem; letter-spacing: 2px; }
+      .action { padding: 28px 20px 24px; border-radius: var(--radius-md); }
+      .custom-row { flex-direction: column; }
+      .btn-go { width: 100%; text-align: center; }
+      .stats { gap: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-glow"></div>
+  <div class="bg-grid"></div>
+
+  <div class="main">
+
+    <!-- 标题区 -->
+    <div class="hero">
+      <div class="logo-mark" style="justify-content:center; margin-bottom:24px;">
+        <div class="logo-icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+        </div>
+      </div>
+      <h1 class="hero-title"><span>极简隐私聊天</span></h1>
+      <p class="hero-desc">
+        临时私密对话，阅后即焚<br/>
+        无注册 · 无记录 · 完全匿名
+      </p>
+      <div class="hero-tags">
+        <div class="tag"><span class="tag-dot"></span>无数据库</div>
+        <div class="tag"><span class="tag-dot"></span>无记录</div>
+        <div class="tag"><span class="tag-dot"></span>阅后即焚</div>
+        <div class="tag"><span class="tag-dot"></span>完全匿名</div>
+      </div>
+    </div>
+
+    <!-- 操作卡 -->
+    <div class="action">
+      <div class="action-label">创建或加入房间</div>
+
+      <button class="btn-random" id="btnRandom" onclick="goRandom()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="5 3 19 12 5 21 5 3"/>
+        </svg>
+        随机进入房间
+      </button>
+
+      <div class="divider"><span>或者输入房间号</span></div>
+
+      <div class="custom-row">
+        <input
+          type="text"
+          class="custom-input"
+          id="roomInput"
+          placeholder="4-8位字母或数字"
+          maxlength="8"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button class="btn-go" onclick="goCustom()">进入</button>
+      </div>
+
+      <div class="hint">房间号支持 4-8 位字母或数字</div>
+    </div>
+
+    <!-- 统计栏 -->
+    <div class="stats">
+      <div class="stat-item">
+        <div class="stat-num">0</div>
+        <div class="stat-label">数据库</div>
+      </div>
+      <div class="stat-div"></div>
+      <div class="stat-item">
+        <div class="stat-num">0ms</div>
+        <div class="stat-label">存留记录</div>
+      </div>
+      <div class="stat-div"></div>
+      <div class="stat-item">
+        <div class="stat-num">∞</div>
+        <div class="stat-label">隐私保障</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    &copy; 2026 随心名彻 &nbsp;·&nbsp; 极简隐私聊天
+  </div>
+
+  <script>
+    function genRoomCode() {
+      const chars = 'abcdefghjkmnpqrstuvwxyz23456789';
+      return Array.from({length: 6}, () =>
+        chars[Math.floor(Math.random() * chars.length)]
+      ).join('');
+    }
+
+    function isValidRoom(code) {
+      return /^[a-z0-9]{4,8}$/i.test(code);
+    }
+
+    function goRandom() {
+      const btn = document.getElementById('btnRandom');
+      btn.style.opacity = '.7';
+      btn.style.transform = 'scale(.98)';
+      setTimeout(() => {
+        location.href = '/' + genRoomCode();
+      }, 120);
+    }
+
+    function goCustom() {
+      const input = document.getElementById('roomInput');
+      const code = input.value.trim().toLowerCase();
+
+      if (!code) { input.focus(); return; }
+
+      if (!isValidRoom(code)) {
+        input.classList.add('error');
+        setTimeout(() => input.classList.remove('error'), 600);
+        input.focus();
+        return;
+      }
+
+      location.href = '/' + code;
+    }
+
+    document.getElementById('roomInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') goCustom();
+    });
+
+    // 只允许字母数字输入
+    document.getElementById('roomInput').addEventListener('input', function() {
+      this.value = this.value.replace(/[^a-zA-Z0-9]/g, '');
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,1550 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>极简隐私聊天</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ── 设计令牌 ── */
+    :root {
+      --bg:         #0d0d14;
+      --surface:    #13131e;
+      --surface2:   #1a1a28;
+      --surface3:   #1f1f30;
+      --border:     #252538;
+      --border-dim: #1e1e2e;
+      --text:       #e8e8f5;
+      --text-dim:   #6b6b8a;
+      --text-muted: #3d3d58;
+      --accent:     #00e5ff;
+      --accent2:    #c400ff;
+      --accent-dim: #0099bb;
+      --burn:       #ff3366;
+      --success:    #00e5a0;
+      --glow:       0 0 24px rgba(0,229,255,.45);
+      --glow2:      0 0 24px rgba(196,0,255,.45);
+      --glow-sm:    0 0 12px rgba(0,229,255,.3);
+      --radius-sm:  6px;
+      --radius-md:  10px;
+      --radius-lg:  16px;
+      --header-h:   56px;
+      --footer-h:   88px;
+      --transition: .18s cubic-bezier(.4,0,.2,1);
+    }
+
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg:         #f2f3f8;
+        --surface:    #ffffff;
+        --surface2:   #f7f8fc;
+        --surface3:   #eef0f7;
+        --border:     #e0e2ee;
+        --border-dim: #eceff7;
+        --text:       #18192b;
+        --text-dim:   #7a7d9a;
+        --text-muted: #b0b3cc;
+        --accent:     #0099cc;
+        --accent2:    #9900cc;
+        --accent-dim: #0077aa;
+        --burn:       #e0004d;
+        --success:    #00aa77;
+        --glow:       0 0 16px rgba(0,153,204,.35);
+        --glow2:      0 0 16px rgba(153,0,204,.25);
+        --glow-sm:    0 0 10px rgba(0,153,204,.25);
+      }
+    }
+
+    /* ── 基础 ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── 页面容器 ── */
+    .page-wrap {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ── 背景 ── */
+    .page-wrap::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 15% 15%, rgba(0,229,255,.06) 0%, transparent 55%),
+        radial-gradient(ellipse at 85% 85%, rgba(196,0,255,.06) 0%, transparent 55%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── 顶部栏 ── */
+    :root { --header-h: 76px; }
+    .header {
+      height: var(--header-h);
+      background: rgba(13,13,20,.88);
+      backdrop-filter: blur(24px) saturate(1.4);
+      -webkit-backdrop-filter: blur(24px) saturate(1.4);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 16px 6px;
+      flex-shrink: 0;
+      z-index: 10;
+      position: relative;
+    }
+    /* 标题居中行 */
+    .header-center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1px;
+    }
+    /* 控件行 */
+    .header-left { display: none; }
+    .header-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      gap: 8px;
+    }
+    .header-controls-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+    }
+    .header::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent) 40%, var(--accent2) 60%, transparent);
+      opacity: .5;
+    }
+
+    /* 左侧 Logo */
+    .header-left { display: flex; align-items: center; gap: 10px; visibility: hidden; }
+    .header-logo {
+      width: 30px; height: 30px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: var(--glow-sm);
+    }
+    .header-logo svg { color: #000; }
+    .site-info { display: flex; flex-direction: column; gap: 1px; }
+    .logo-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .82rem;
+      font-weight: 600;
+      color: var(--accent);
+      text-shadow: var(--glow-sm);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      line-height: 1;
+    }
+    .logo-sub {
+      font-size: .58rem;
+      color: var(--text-muted);
+      letter-spacing: .5px;
+    }
+
+    /* 右侧控件 */
+    .header-right { display: flex; align-items: center; gap: 8px; }
+
+    .room-tag {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      padding: 5px 12px;
+      border-radius: var(--radius-sm);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .78rem;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: 2px;
+      transition: border-color var(--transition);
+    }
+    .room-tag:hover { border-color: var(--accent); }
+    .room-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+      animation: pulse 2s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+    @keyframes pulse {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50% { opacity: .5; transform: scale(.75); }
+    }
+
+    .online-badge {
+      font-size: .68rem;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+    .online-badge .num {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      color: var(--accent);
+      text-shadow: var(--glow-sm);
+    }
+
+    .icon-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      font-size: .7rem;
+      font-family: 'Inter', system-ui, sans-serif;
+      cursor: pointer;
+      transition: all var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+    }
+    .icon-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      box-shadow: var(--glow-sm);
+      transform: translateY(-1px);
+    }
+    .icon-btn:active { transform: scale(.95); }
+    .icon-btn.copied {
+      color: var(--success);
+      border-color: var(--success);
+      box-shadow: 0 0 10px rgba(0,229,160,.3);
+    }
+
+    /* ── 聊天区 ── */
+    .chat-area {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 20px 16px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      scroll-behavior: smooth;
+      position: relative;
+      z-index: 1;
+    }
+    .chat-area::-webkit-scrollbar { width: 3px; }
+    .chat-area::-webkit-scrollbar-track { background: transparent; }
+    .chat-area::-webkit-scrollbar-thumb {
+      background: linear-gradient(var(--accent), var(--accent2));
+      border-radius: 4px;
+    }
+
+    /* 空状态 */
+    .empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      color: var(--text-muted);
+      text-align: center;
+      user-select: none;
+    }
+    .empty-icon {
+      width: 56px; height: 56px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: .5;
+    }
+    .empty-state p {
+      font-size: .82rem;
+      line-height: 1.9;
+      max-width: 240px;
+      color: var(--text-muted);
+    }
+    .empty-room-code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .72rem;
+      color: var(--text-dim);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      padding: 4px 12px;
+      border-radius: 4px;
+      letter-spacing: 2px;
+    }
+
+    /* 日期分割 */
+    .date-divider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 0;
+      flex-shrink: 0;
+    }
+    .date-divider::before, .date-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+    .date-divider span {
+      font-size: .6rem;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      font-family: 'JetBrains Mono', monospace;
+      white-space: nowrap;
+    }
+
+    /* ── 消息 ── */
+    .msg-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      max-width: 78%;
+      animation: msgIn .28s cubic-bezier(.22,1,.36,1) both;
+      flex-shrink: 0;
+    }
+    @keyframes msgIn {
+      from { opacity: 0; transform: translateY(10px) scale(.97); }
+      to   { opacity: 1; transform: none; }
+    }
+    .msg-wrap.self  { align-self: flex-start; align-items: flex-start; }
+    .msg-wrap.other { align-self: flex-start; align-items: flex-start; }
+    .msg-wrap.system { align-self: center; align-items: center; max-width: 92%; }
+
+    .msg-nick {
+      font-size: .72rem;
+      font-weight: 600;
+      color: var(--accent);
+      padding: 0 4px;
+      letter-spacing: .3px;
+      line-height: 1;
+    }
+    /* 昵称颜色由 JS 内联设置 */
+    .msg-wrap.self  .msg-nick { color: var(--accent2); }
+
+    .msg-body { display: flex; align-items: flex-end; gap: 6px; }
+    .msg-wrap.self .msg-body { flex-direction: row; }
+
+    /* 气泡 */
+    .msg-bubble {
+      padding: 10px 14px;
+      border-radius: 14px;
+      font-size: .88rem;
+      line-height: 1.65;
+      word-break: break-word;
+      white-space: pre-wrap;
+      position: relative;
+      max-width: 100%;
+    }
+    .msg-wrap.other .msg-bubble {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-left-width: 3px;
+      /* 左边框颜色由 JS 内联设置 */
+      border-bottom-left-radius: 4px;
+    }
+    .msg-wrap.self .msg-bubble {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #000;
+      font-weight: 500;
+      border-bottom-left-radius: 4px;
+      box-shadow: 0 2px 16px rgba(0,229,255,.25), 0 2px 16px rgba(196,0,255,.2);
+    }
+    .msg-wrap.system .msg-bubble {
+      background: var(--surface2);
+      color: var(--text-dim);
+      font-size: .7rem;
+      padding: 5px 14px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-style: italic;
+    }
+
+    /* 时间戳 */
+    .msg-time {
+      font-size: .58rem;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-muted);
+      opacity: 0;
+      transition: opacity .25s;
+      padding: 0 4px;
+      line-height: 1;
+    }
+    .msg-wrap:hover .msg-time { opacity: .7; }
+    .msg-wrap.self  .msg-time { text-align: left; }
+    .msg-wrap.other .msg-time { text-align: left; }
+
+    /* 消失进度条 */
+    .burn-bar-wrap {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 0 2px;
+      flex-shrink: 0;
+    }
+    .burn-bar-wrap.hidden { display: none; }
+    .burn-track {
+      display: none;
+    }
+    .burn-fill {
+      display: none;
+    }
+    .burn-sec {
+      font-size: .58rem;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--burn);
+      text-shadow: 0 0 8px var(--burn);
+      min-width: 20px;
+      text-align: right;
+      line-height: 1;
+    }
+
+    /* 消失动画 */
+    .msg-wrap.burning {
+      transition: opacity .45s ease, transform .45s ease, filter .45s ease;
+      opacity: 0;
+      transform: scale(.88) translateY(-4px);
+      filter: blur(6px);
+    }
+
+    /* ── 底部输入区 ── */
+    .chat-footer {
+      background: rgba(13,13,20,.92);
+      backdrop-filter: blur(20px) saturate(1.4);
+      -webkit-backdrop-filter: blur(20px) saturate(1.4);
+      border-top: 1px solid var(--border);
+      padding: 10px 14px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 10;
+    }
+    .chat-footer::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent2) 30%, var(--accent) 70%, transparent);
+      opacity: .4;
+    }
+
+    /* 消失术控件行 */
+    .burn-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .burn-label {
+      font-size: .65rem;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      white-space: nowrap;
+      font-family: 'JetBrains Mono', monospace;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .burn-label svg { opacity: .5; }
+    .burn-options { display: flex; gap: 4px; }
+    .burn-opt {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: .65rem;
+      font-family: 'JetBrains Mono', monospace;
+      cursor: pointer;
+      transition: all var(--transition);
+      line-height: 1.4;
+    }
+    .burn-opt:hover { border-color: var(--burn); color: var(--burn); }
+    .burn-opt.active {
+      background: rgba(255,51,102,.15);
+      border-color: var(--burn);
+      color: var(--burn);
+      box-shadow: 0 0 10px rgba(255,51,102,.3);
+    }
+    /* 永久选项 */
+    /* 关闭选项特殊样式 */
+    .burn-opt[data-sec="0"] { color: var(--text-dim); }
+    .burn-opt[data-sec="0"].active { background: var(--surface3); border-color: var(--text-dim); color: var(--text); box-shadow: none; }
+
+    /* 输入行 */
+    .input-row { display: flex; align-items: center; gap: 8px; }
+
+    .nick-badge {
+      font-size: .62rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      max-width: 90px;
+    }
+    .nick-badge strong {
+      color: var(--accent2);
+      font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 70px;
+    }
+
+    .msg-input {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: var(--radius-md);
+      font-size: .88rem;
+      font-family: 'Inter', system-ui, sans-serif;
+      outline: none;
+      transition: border var(--transition), box-shadow var(--transition), background var(--transition);
+      min-width: 0;
+      resize: none;
+      line-height: 1.5;
+    }
+    .msg-input:focus {
+      border-color: var(--accent);
+      box-shadow: var(--glow-sm);
+      background: var(--surface3);
+    }
+    .msg-input::placeholder { color: var(--text-muted); }
+
+    .send-btn {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #000;
+      border: none;
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: transform var(--transition), box-shadow var(--transition), filter var(--transition);
+    }
+    .send-btn:hover {
+      box-shadow: var(--glow), var(--glow2);
+      transform: scale(1.06) translateY(-1px);
+      filter: brightness(1.08);
+    }
+    .send-btn:active { transform: scale(.94); }
+    .send-btn:disabled {
+      opacity: .35;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* ── 表情面板 ── */
+    .emoji-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.2rem;
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      opacity: .6;
+      transition: opacity var(--transition), background var(--transition), transform var(--transition);
+      line-height: 1;
+    }
+    .emoji-btn:hover { opacity: 1; background: var(--surface2); transform: scale(1.1); }
+    .emoji-btn.active { opacity: 1; background: var(--surface3); }
+
+    .img-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      opacity: .6;
+      color: var(--text-dim);
+      transition: opacity var(--transition), background var(--transition), transform var(--transition);
+    }
+    .img-btn:hover { opacity: 1; background: var(--surface2); transform: scale(1.1); }
+    .img-btn:disabled { opacity: .25; cursor: not-allowed; transform: none; }
+
+    /* 消息图片 */
+    .msg-img {
+      max-width: 220px;
+      max-height: 200px;
+      border-radius: var(--radius-md);
+      display: block;
+      cursor: zoom-in;
+      object-fit: cover;
+      border: 1px solid rgba(255,255,255,.08);
+      transition: opacity var(--transition);
+    }
+    .msg-img:hover { opacity: .88; }
+
+    /* 图片预览遮罩 */
+    .img-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.85);
+      backdrop-filter: blur(8px);
+      z-index: 999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: zoom-out;
+    }
+    .img-overlay.show { display: flex; }
+    .img-overlay img {
+      max-width: 92vw;
+      max-height: 88vh;
+      border-radius: var(--radius-lg);
+      box-shadow: 0 8px 48px rgba(0,0,0,.7);
+      object-fit: contain;
+    }
+
+    .emoji-panel {
+      position: absolute;
+      bottom: calc(100% + 8px);
+      right: 0;
+      left: 0;
+      background: rgba(13,13,20,.92);
+      backdrop-filter: blur(18px) saturate(1.4);
+      -webkit-backdrop-filter: blur(18px) saturate(1.4);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: var(--radius-lg);
+      padding: 12px 10px;
+      z-index: 50;
+      display: none;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .emoji-panel.show { display: flex; }
+    .emoji-panel-tabs {
+      display: flex;
+      gap: 4px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-dim);
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .emoji-panel-tabs::-webkit-scrollbar { display: none; }
+    .emoji-tab {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: .9rem;
+      padding: 3px 8px;
+      border-radius: 6px;
+      color: var(--text-dim);
+      white-space: nowrap;
+      font-size: .7rem;
+      transition: background var(--transition), color var(--transition);
+    }
+    .emoji-tab.active { background: var(--surface3); color: var(--text); }
+    .emoji-tab:hover { background: var(--surface2); }
+    .emoji-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(32px, 1fr));
+      gap: 2px;
+      max-height: 160px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .emoji-grid::-webkit-scrollbar { width: 4px; }
+    .emoji-grid::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    .emoji-item {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.28rem;
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background var(--transition), transform var(--transition);
+      line-height: 1;
+    }
+    .emoji-item:hover { background: var(--surface3); transform: scale(1.2); }
+
+    /* ── Toast 提示 ── */
+    .conn-toast {
+      position: fixed;
+      top: calc(var(--header-h) + 10px);
+      left: 50%;
+      transform: translateX(-50%) translateY(-8px);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: .7rem;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-dim);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .3s, transform .3s;
+      z-index: 100;
+      white-space: nowrap;
+      letter-spacing: .5px;
+    }
+    .conn-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .conn-toast.error { color: var(--burn); border-color: var(--burn); }
+    .conn-toast.ok { color: var(--success); border-color: var(--success); }
+
+    .toast {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%) translateY(8px);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      padding: 8px 20px;
+      border-radius: 20px;
+      font-size: .78rem;
+      color: var(--text);
+      opacity: 0;
+      pointer-events: none;
+      transition: all .3s;
+      z-index: 100;
+      letter-spacing: .3px;
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── 版权 ── */
+    .page-copyright {
+      text-align: center;
+      font-size: .58rem;
+      color: var(--text-muted);
+      padding: 3px 0 6px;
+      letter-spacing: 1px;
+      font-family: 'JetBrains Mono', monospace;
+      flex-shrink: 0;
+      background: rgba(13,13,20,.92);
+    }
+
+    /* ── 在线成员面板 ── */
+    .members-panel {
+      position: fixed;
+      top: 30%;
+      right: 0;
+      transform: translateY(-50%);
+      background: rgba(13,13,20,.55);
+      backdrop-filter: blur(16px) saturate(1.4);
+      -webkit-backdrop-filter: blur(16px) saturate(1.4);
+      border: 1px solid rgba(255,255,255,.08);
+      border-right: none;
+      border-radius: 12px 0 0 12px;
+      padding: 10px 8px;
+      min-width: 80px;
+      max-width: 120px;
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .members-title {
+      font-size: .52rem;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      font-family: 'JetBrains Mono', monospace;
+      text-align: center;
+      padding-bottom: 4px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+    .members-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .member-item {
+      font-size: .65rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100px;
+      line-height: 1.5;
+    }
+
+    /* ── 响应式 ── */
+    @media (max-width: 480px) {
+      .header { padding: 6px 12px 5px; }
+      .header-controls { gap: 5px; }
+      .logo-text { font-size: .75rem; }
+      .logo-sub  { font-size: .52rem; }
+      .room-tag  { padding: 4px 8px; font-size: .72rem; letter-spacing: 1px; }
+      .online-badge { font-size: .62rem; }
+      .icon-btn  { padding: 5px 8px; font-size: .65rem; }
+      .chat-area { padding: 14px 10px 8px; }
+      .msg-wrap  { max-width: 88%; }
+      .nick-badge { max-width: 72px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-wrap">
+
+  <!-- 在线成员面板 -->
+  <div class="members-panel" id="membersPanel">
+    <div class="members-title">在线</div>
+    <div class="members-list" id="membersList"></div>
+  </div>
+
+  <!-- 顶部栏 -->
+  <header class="header">
+    <!-- 第一行：居中标题 -->
+    <div class="header-center">
+      <div class="logo-text">极简隐私聊天</div>
+      <div class="logo-sub">无记录 · 无数据库 · 匿名</div>
+    </div>
+
+    <!-- 第二行：控件 -->
+    <div class="header-controls">
+      <div class="room-tag">
+        <div class="room-dot"></div>
+        <span id="roomDisplay">——</span>
+      </div>
+      <div class="header-controls-right">
+        <div class="online-badge">
+          <span class="num" id="onlineNum">0</span>
+          <span>在线</span>
+        </div>
+        <button class="icon-btn" id="copyBtn" onclick="copyLink()">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2"/>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+          </svg>
+          分享
+        </button>
+        <button class="icon-btn" onclick="location.href='/'">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          新建
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 聊天区 -->
+  <div class="chat-area" id="chatArea">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+      </div>
+      <p>把房间链接分享给朋友<br/>相同链接即可匿名聊天</p>
+      <div class="empty-room-code" id="emptyRoomCode">——</div>
+    </div>
+  </div>
+
+  <!-- 底部输入 -->
+  <div class="chat-footer">
+    <!-- 表情面板 -->
+    <div class="emoji-panel" id="emojiPanel">
+      <div class="emoji-panel-tabs" id="emojiTabs"></div>
+      <div class="emoji-grid" id="emojiGrid"></div>
+    </div>
+    <div class="burn-row">
+      <div class="burn-label">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M12 2C6.5 7 4 11 4 14a8 8 0 0 0 16 0c0-4-2.5-7.5-8-12z"/>
+        </svg>
+        消失术
+      </div>
+      <div class="burn-options">
+        <button class="burn-opt" data-sec="3"  onclick="setBurnSec(3)">3s</button>
+        <button class="burn-opt active" data-sec="10" onclick="setBurnSec(10)">10s</button>
+        <button class="burn-opt" data-sec="30" onclick="setBurnSec(30)">30s</button>
+        <button class="burn-opt" data-sec="60" onclick="setBurnSec(60)">60s</button>
+        <button class="burn-opt" data-sec="0"  onclick="setBurnSec(0)">关闭</button>
+      </div>
+    </div>
+    <div class="input-row">
+      <div class="nick-badge">
+        以 <strong id="nickDisplay">—</strong>
+      </div>
+      <input
+        id="msgInput"
+        type="text"
+        class="msg-input"
+        placeholder="说些什么..."
+        maxlength="500"
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <button class="emoji-btn" id="emojiBtn" title="表情" onclick="toggleEmoji()">😊</button>
+      <button class="img-btn" id="imgBtn" title="发送图片" onclick="document.getElementById('imgFileInput').click()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+          <polyline points="21 15 16 10 5 21"/>
+        </svg>
+      </button>
+      <input type="file" id="imgFileInput" accept="image/*" style="display:none" onchange="handleImgFile(this)">
+      <button class="send-btn" id="sendBtn" onclick="sendMsg()" title="发送 (Enter)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"/>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="page-copyright">&copy; 2026 随心名彻 · 极简隐私聊天</div>
+
+</div>
+
+<!-- 图片大图预览 -->
+<div class="img-overlay" id="imgOverlay" onclick="closeImgOverlay()">
+  <img id="imgOverlayImg" src="" alt="预览" />
+</div>
+
+<!-- 提示层 -->
+<div class="conn-toast" id="connToast"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ── 配置 ─────────────────────────────────────────────
+const WS_URL = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}`;
+
+// ── 昵称库 ───────────────────────────────────────────
+const ADJ = [
+  '沉默的','温柔的','孤独的','遥远的','安静的','流浪的','深夜的',
+  '迷路的','自由的','疲惫的','清醒的','轻盈的','陌生的','神秘的',
+  '破碎的','宁静的','奔跑的','漂浮的','沉睡的','闪烁的','苍白的',
+  '淡薄的','模糊的','无名的','空旷的','失落的','漫游的','静默的',
+];
+const NOUN = [
+  '狐狸','灰狼','白鲸','仙鹤','麋鹿','繁星','月影','深海','微风','薄雾',
+  '尘埃','黑猫','游鱼','棕熊','飞鸟','长兔','银蛇','骏马','蝴蝶','浮云',
+  '细雨','飞雪','齿轮','星尘','极光','碎片','旅人','诗人','幽灵','渡鸦',
+];
+const usedNicks = new Set();
+let myNick = genNick();
+
+function genNick() {
+  let nick, attempts = 0;
+  do {
+    nick = ADJ[Math.floor(Math.random() * ADJ.length)]
+         + NOUN[Math.floor(Math.random() * NOUN.length)];
+    attempts++;
+  } while (usedNicks.has(nick) && attempts < 30);
+  return nick;
+}
+
+// ── 工具函数 ─────────────────────────────────────────
+function getRoomFromURL() {
+  const p = location.pathname.replace(/^\//, '').split('?')[0];
+  const h = location.hash.replace('#','').trim();
+  const r = p || h;
+  return /^[a-z0-9]{4,8}$/i.test(r) ? r.toLowerCase() : null;
+}
+
+function genRoomCode() {
+  const chars = 'abcdefghjkmnpqrstuvwxyz23456789';
+  return Array.from({length:6}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
+}
+
+function fmtTime(ts) {
+  const d = new Date(ts);
+  return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── 状态 ─────────────────────────────────────────────
+let roomCode = '';
+let ws = null;
+let myId = null;
+let seenIds = new Set();
+let toastTimer = null;
+// ── 昵称哈希颜色 ──────────────────────────────────────
+const NICK_COLORS = [
+  '#00e5ff','#c400ff','#00e5a0','#ff9500','#ff3366',
+  '#7c4dff','#00bcd4','#ff6d00','#76ff03','#ff4081',
+  '#18ffff','#e040fb','#ffab40','#69f0ae','#ff6e40',
+];
+function nickColor(nick) {
+  let hash = 0;
+  for (let i = 0; i < nick.length; i++) hash = (hash * 31 + nick.charCodeAt(i)) >>> 0;
+  return NICK_COLORS[hash % NICK_COLORS.length];
+}
+
+let burnSec = 10;
+let reconnectTimer = null;
+let reconnectAttempts = 0;
+
+// ── Toast ─────────────────────────────────────────────
+function showToast(msg, duration = 2200) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), duration);
+}
+
+let connToastTimer = null;
+function showConnToast(msg, type = '') {
+  const el = document.getElementById('connToast');
+  el.textContent = msg;
+  el.className = 'conn-toast show' + (type ? ' ' + type : '');
+  clearTimeout(connToastTimer);
+  if (type) {
+    connToastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+  }
+}
+
+// ── 复制链接 ─────────────────────────────────────────
+function copyLink() {
+  const url = location.origin + '/' + roomCode;
+  const btn = document.getElementById('copyBtn');
+
+  function onSuccess() {
+    btn.classList.add('copied');
+    btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> 已复制`;
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> 分享`;
+    }, 2200);
+  }
+
+  function fallbackCopy() {
+    // 降级方案：创建临时 textarea 复制
+    const ta = document.createElement('textarea');
+    ta.value = url;
+    ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try {
+      document.execCommand('copy');
+      onSuccess();
+    } catch {
+      showToast('复制失败，链接：' + url);
+    }
+    document.body.removeChild(ta);
+  }
+
+  if (navigator.clipboard && location.protocol === 'https:') {
+    navigator.clipboard.writeText(url).then(onSuccess).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+// ── 表情 ─────────────────────────────────────────────
+const EMOJI_DATA = {
+  '常用': ['😊','😂','🥰','😍','🤩','😎','🥳','😜','🤗','😏','😅','🙈','😭','😤','🤔','😴','🥺','😇','🫠','🤣'],
+  '手势': ['👍','👎','👏','🙌','🤝','👋','✌️','🤞','💪','🫶','❤️','💯','🔥','✨','🎉','🎊','💫','⭐','🌟','💥'],
+  '动物': ['🐱','🐶','🐼','🐨','🐸','🦊','🐰','🐻','🐯','🦁','🐧','🦋','🐝','🦄','🐲','🦅','🐺','🦋','🐠','🐙'],
+  '食物': ['🍎','🍕','🍔','🍜','🍣','🍦','🍰','🎂','🍫','🧋','🍵','☕','🍺','🥤','🍭','🍩','🥐','🍓','🥑','🌮'],
+  '自然': ['🌈','🌸','🌺','🌻','🌙','⭐','☀️','❄️','🌊','🔥','🌴','🌿','🍀','🌍','🌸','💧','🌨️','🌫️','🌪️','🌅'],
+  '符号': ['❤️','💔','💕','💞','🤍','🖤','💛','💙','💜','💚','♾️','✅','❌','⚡','💎','👑','🏆','🎯','🔑','💡'],
+};
+let emojiCurTab = '常用';
+
+function initEmojiPanel() {
+  const tabs = document.getElementById('emojiTabs');
+  Object.keys(EMOJI_DATA).forEach(cat => {
+    const btn = document.createElement('button');
+    btn.className = 'emoji-tab' + (cat === emojiCurTab ? ' active' : '');
+    btn.textContent = cat;
+    btn.onclick = () => switchEmojiTab(cat);
+    tabs.appendChild(btn);
+  });
+  renderEmojiGrid(emojiCurTab);
+}
+
+function switchEmojiTab(cat) {
+  emojiCurTab = cat;
+  document.querySelectorAll('.emoji-tab').forEach(b => {
+    b.classList.toggle('active', b.textContent === cat);
+  });
+  renderEmojiGrid(cat);
+}
+
+function renderEmojiGrid(cat) {
+  const grid = document.getElementById('emojiGrid');
+  grid.innerHTML = '';
+  EMOJI_DATA[cat].forEach(em => {
+    const btn = document.createElement('button');
+    btn.className = 'emoji-item';
+    btn.textContent = em;
+    btn.title = em;
+    btn.onclick = () => insertEmoji(em);
+    grid.appendChild(btn);
+  });
+}
+
+function toggleEmoji() {
+  const panel = document.getElementById('emojiPanel');
+  const btn = document.getElementById('emojiBtn');
+  const show = !panel.classList.contains('show');
+  panel.classList.toggle('show', show);
+  btn.classList.toggle('active', show);
+  if (show) document.getElementById('msgInput').focus();
+}
+
+function insertEmoji(em) {
+  const input = document.getElementById('msgInput');
+  const start = input.selectionStart;
+  const end = input.selectionEnd;
+  const val = input.value;
+  input.value = val.slice(0, start) + em + val.slice(end);
+  input.selectionStart = input.selectionEnd = start + em.length;
+  input.focus();
+}
+
+// 点击面板外部关闭
+document.addEventListener('click', (e) => {
+  const panel = document.getElementById('emojiPanel');
+  const btn = document.getElementById('emojiBtn');
+  if (panel && !panel.contains(e.target) && e.target !== btn) {
+    panel.classList.remove('show');
+    btn && btn.classList.remove('active');
+  }
+});
+
+// ── 图片发送 ──────────────────────────────────────────
+const IMG_MAX_SIDE  = 1200;   // 最长边压缩到 1200px
+const IMG_QUALITY   = 0.78;   // JPEG 质量
+const IMG_MAX_BYTES = 500 * 1024; // 500KB（压缩后限制）
+
+function handleImgFile(input) {
+  const file = input.files[0];
+  input.value = '';
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { showToast('只支持图片文件'); return; }
+
+  const reader = new FileReader();
+  reader.onload = (e) => compressAndSend(e.target.result);
+  reader.readAsDataURL(file);
+}
+
+function compressAndSend(dataUrl) {
+  const img = new Image();
+  img.onload = () => {
+    let { width, height } = img;
+
+    // 等比缩放
+    if (width > IMG_MAX_SIDE || height > IMG_MAX_SIDE) {
+      if (width >= height) { height = Math.round(height * IMG_MAX_SIDE / width); width = IMG_MAX_SIDE; }
+      else                 { width  = Math.round(width  * IMG_MAX_SIDE / height); height = IMG_MAX_SIDE; }
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width  = width;
+    canvas.height = height;
+    canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+
+    const compressed = canvas.toDataURL('image/jpeg', IMG_QUALITY);
+
+    // 超过 500KB 提示
+    const bytes = Math.round((compressed.length * 3) / 4);
+    if (bytes > IMG_MAX_BYTES) {
+      showToast('图片太大，请选择更小的图片');
+      return;
+    }
+
+    if (!ws || ws.readyState !== WebSocket.OPEN) { showToast('未连接，无法发送'); return; }
+
+    const msgId = Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+    ws.send(JSON.stringify({
+      type:    'img',
+      imgData: compressed,
+      burn:    burnSec,
+      msgId,
+    }));
+  };
+  img.src = dataUrl;
+}
+
+// 大图预览
+function openImgOverlay(src) {
+  document.getElementById('imgOverlayImg').src = src;
+  document.getElementById('imgOverlay').classList.add('show');
+}
+function closeImgOverlay() {
+  document.getElementById('imgOverlay').classList.remove('show');
+  document.getElementById('imgOverlayImg').src = '';
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeImgOverlay();
+});
+
+// ── 消失术 ───────────────────────────────────────────
+function setBurnSec(sec) {
+  burnSec = sec;
+  document.querySelectorAll('.burn-opt').forEach(btn => {
+    btn.classList.toggle('active', parseInt(btn.dataset.sec) === sec);
+  });
+}
+
+// ── 进入房间 ─────────────────────────────────────────
+function enterRoom(code) {
+  roomCode = code;
+  document.getElementById('roomDisplay').textContent = roomCode;
+  document.getElementById('emptyRoomCode').textContent = roomCode;
+  document.getElementById('nickDisplay').textContent = myNick;
+  document.title = `#${roomCode} · 极简隐私聊天`;
+  history.replaceState(null, '', '/' + roomCode);
+  connectWS();
+}
+
+// 初始化
+(function init() {
+  const code = getRoomFromURL() || genRoomCode();
+  enterRoom(code);
+
+  const input = document.getElementById('msgInput');
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMsg();
+    }
+  });
+  input.focus();
+  initEmojiPanel();
+})();
+
+// ── WebSocket ─────────────────────────────────────────
+function connectWS() {
+  if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) return;
+
+  showConnToast('正在连接...');
+  ws = new WebSocket(WS_URL);
+
+  ws.onopen = () => {
+    reconnectAttempts = 0;
+    showConnToast('已连接', 'ok');
+    document.getElementById('sendBtn').disabled = false;
+    ws.send(JSON.stringify({ type: 'join', room: roomCode, nick: myNick }));
+  };
+
+  ws.onmessage = (e) => {
+    let data;
+    try { data = JSON.parse(e.data); } catch { return; }
+
+    switch (data.type) {
+      case 'joined':
+        myId = data.id;
+        document.getElementById('onlineNum').textContent = data.count;
+        break;
+
+      case 'msg': {
+        if (seenIds.has(data.msgId)) return;
+        seenIds.add(data.msgId);
+        if (data.nick) usedNicks.add(data.nick);
+        appendMsg(data, data.fromId === myId);
+        break;
+      }
+
+      case 'img': {
+        if (seenIds.has(data.msgId)) return;
+        seenIds.add(data.msgId);
+        if (data.nick) usedNicks.add(data.nick);
+        appendImgMsg(data, data.fromId === myId);
+        break;
+      }
+
+      case 'system':
+        appendSystem(data.text);
+        break;
+
+      case 'online':
+        document.getElementById('onlineNum').textContent = data.count;
+        // 更新在线成员面板
+        if (data.nicks) {
+          const list = document.getElementById('membersList');
+          list.innerHTML = '';
+          data.nicks.forEach(n => {
+            const el = document.createElement('div');
+            el.className = 'member-item';
+            el.textContent = n;
+            el.style.color = nickColor(n);
+            list.appendChild(el);
+          });
+        }
+        break;
+    }
+  };
+
+  ws.onclose = () => {
+    document.getElementById('sendBtn').disabled = true;
+    reconnectAttempts++;
+    const delay = Math.min(1000 * Math.pow(1.5, reconnectAttempts - 1), 15000);
+    showConnToast(`连接断开，${Math.round(delay/1000)}s 后重连...`, 'error');
+    clearTimeout(reconnectTimer);
+    reconnectTimer = setTimeout(connectWS, delay);
+  };
+
+  ws.onerror = () => { ws.close(); };
+}
+
+// ── 发送 ─────────────────────────────────────────────
+function sendMsg() {
+  const input = document.getElementById('msgInput');
+  const text = input.value.trim();
+  if (!text || !ws || ws.readyState !== WebSocket.OPEN) return;
+  input.value = '';
+
+  ws.send(JSON.stringify({
+    type: 'msg',
+    room: roomCode,
+    nick: myNick,
+    text,
+    burn: burnSec,
+    ts: Date.now(),
+    msgId: Date.now() + '_' + Math.random().toString(36).slice(2)
+  }));
+}
+
+// ── 渲染消息 ─────────────────────────────────────────
+function hideEmptyState() {
+  const empty = document.getElementById('emptyState');
+  if (empty) { empty.style.display = 'none'; }
+}
+
+function scrollToBottom() {
+  const area = document.getElementById('chatArea');
+  const isNearBottom = area.scrollHeight - area.scrollTop - area.clientHeight < 120;
+  if (isNearBottom) {
+    requestAnimationFrame(() => { area.scrollTop = area.scrollHeight; });
+  }
+}
+
+function appendMsg(data, isSelf) {
+  hideEmptyState();
+  const area = document.getElementById('chatArea');
+  const wrap = document.createElement('div');
+  wrap.className = 'msg-wrap ' + (isSelf ? 'self' : 'other');
+  wrap.dataset.msgId = data.msgId;
+
+  // 哈希颜色（仅对他人消息生效）
+  const color = (!isSelf && data.nick) ? nickColor(data.nick) : null;
+
+  // 昵称
+  const nick = document.createElement('div');
+  nick.className = 'msg-nick';
+  nick.textContent = isSelf ? '我' : data.nick;
+  if (color) nick.style.color = color;
+  wrap.appendChild(nick);
+
+  // 消息体行
+  const body = document.createElement('div');
+  body.className = 'msg-body';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  bubble.textContent = data.text;
+  // 气泡左边框颜色
+  if (color) bubble.style.borderLeftColor = color;
+  body.appendChild(bubble);
+
+  // 消失进度
+  if (data.burn && data.burn > 0) {
+    const DURATION = data.burn * 1000;
+
+    const burnWrap = document.createElement('div');
+    burnWrap.className = 'burn-bar-wrap';
+
+    const track = document.createElement('div');
+    track.className = 'burn-track';
+    const fill = document.createElement('div');
+    fill.className = 'burn-fill';
+    fill.style.width = '100%';
+    track.appendChild(fill);
+
+    const sec = document.createElement('div');
+    sec.className = 'burn-sec';
+    sec.textContent = data.burn + 's';
+
+    burnWrap.appendChild(track);
+    burnWrap.appendChild(sec);
+
+    if (isSelf) {
+      body.insertBefore(burnWrap, bubble);
+    } else {
+      body.appendChild(burnWrap);
+    }
+
+    const start = Date.now();
+    const tick = setInterval(() => {
+      const elapsed = Date.now() - start;
+      const remaining = Math.max(0, DURATION - elapsed);
+      const pct = (remaining / DURATION) * 100;
+      fill.style.width = pct + '%';
+
+      if (elapsed >= DURATION) {
+        clearInterval(tick);
+        sec.textContent = '✓';
+        setTimeout(() => {
+          wrap.classList.add('burning');
+          setTimeout(() => wrap.remove(), 500);
+        }, 80);
+      } else {
+        sec.textContent = Math.ceil(remaining / 1000) + 's';
+      }
+    }, 100);
+  }
+
+  wrap.appendChild(body);
+
+  // 时间
+  const time = document.createElement('div');
+  time.className = 'msg-time';
+  time.textContent = fmtTime(data.ts);
+  wrap.appendChild(time);
+
+  area.appendChild(wrap);
+  scrollToBottom();
+}
+
+function appendImgMsg(data, isSelf) {
+  hideEmptyState();
+  const area = document.getElementById('chatArea');
+  const wrap = document.createElement('div');
+  wrap.className = 'msg-wrap ' + (isSelf ? 'self' : 'other');
+  wrap.dataset.msgId = data.msgId;
+
+  const color = (!isSelf && data.nick) ? nickColor(data.nick) : null;
+
+  // 昵称
+  const nick = document.createElement('div');
+  nick.className = 'msg-nick';
+  nick.textContent = isSelf ? '我' : data.nick;
+  if (color) nick.style.color = color;
+  wrap.appendChild(nick);
+
+  // 消息体行
+  const body = document.createElement('div');
+  body.className = 'msg-body';
+
+  // 图片气泡
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  bubble.style.padding = '5px';
+  bubble.style.background = 'transparent';
+  if (color) bubble.style.borderLeftColor = color;
+
+  const imgEl = document.createElement('img');
+  imgEl.className = 'msg-img';
+  imgEl.src = data.imgData;
+  imgEl.alt = '图片';
+  imgEl.onclick = () => openImgOverlay(data.imgData);
+  bubble.appendChild(imgEl);
+  body.appendChild(bubble);
+
+  // 消失术
+  if (data.burn && data.burn > 0) {
+    const DURATION = data.burn * 1000;
+    const burnWrap = document.createElement('div');
+    burnWrap.className = 'burn-bar-wrap';
+    const track = document.createElement('div');
+    track.className = 'burn-track';
+    const fill = document.createElement('div');
+    fill.className = 'burn-fill';
+    fill.style.width = '100%';
+    track.appendChild(fill);
+    const sec = document.createElement('div');
+    sec.className = 'burn-sec';
+    sec.textContent = data.burn + 's';
+    burnWrap.appendChild(track);
+    burnWrap.appendChild(sec);
+    if (isSelf) body.insertBefore(burnWrap, bubble);
+    else body.appendChild(burnWrap);
+
+    const start = Date.now();
+    const tick = setInterval(() => {
+      const elapsed   = Date.now() - start;
+      const remaining = Math.max(0, DURATION - elapsed);
+      fill.style.width = (remaining / DURATION * 100) + '%';
+      if (elapsed >= DURATION) {
+        clearInterval(tick);
+        sec.textContent = '✓';
+        setTimeout(() => { wrap.classList.add('burning'); setTimeout(() => wrap.remove(), 500); }, 80);
+      } else {
+        sec.textContent = Math.ceil(remaining / 1000) + 's';
+      }
+    }, 100);
+  }
+
+  wrap.appendChild(body);
+  const time = document.createElement('div');
+  time.className = 'msg-time';
+  time.textContent = fmtTime(data.ts);
+  wrap.appendChild(time);
+
+  area.appendChild(wrap);
+  scrollToBottom();
+}
+
+function appendSystem(text) {
+  hideEmptyState();
+  const area = document.getElementById('chatArea');
+  const wrap = document.createElement('div');
+  wrap.className = 'msg-wrap system';
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  bubble.textContent = text;
+  wrap.appendChild(bubble);
+  area.appendChild(wrap);
+  scrollToBottom();
+}
+</script>
+</body>
+</html>
