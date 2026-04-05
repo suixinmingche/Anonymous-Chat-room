@@ -451,6 +451,285 @@
       .btn-go { width: 100%; text-align: center; }
       .stats { gap: 16px; }
     }
+
+    /* ── 功能切换 ── */
+    .feature-tabs {
+      display: flex;
+      gap: 8px;
+      animation: fadeUp .7s ease-out .15s both;
+    }
+    .feature-tab {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 10px 24px;
+      border-radius: var(--radius-md);
+      font-size: .85rem;
+      font-weight: 600;
+      font-family: 'Inter', system-ui, sans-serif;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all var(--transition);
+    }
+    .feature-tab:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+    .feature-tab.active {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-color: transparent;
+      color: #000;
+      box-shadow: var(--glow);
+    }
+    .feature-tab.active:hover {
+      transform: translateY(-1px);
+    }
+
+    /* ── 飘飘瓶样式 ── */
+    .msg-textarea {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 14px 16px;
+      border-radius: var(--radius-md);
+      font-size: .9rem;
+      font-family: 'Inter', system-ui, sans-serif;
+      resize: vertical;
+      min-height: 120px;
+      outline: none;
+      transition: border var(--transition), box-shadow var(--transition);
+      margin-bottom: 10px;
+    }
+    .msg-textarea:focus {
+      border-color: var(--accent);
+      box-shadow: var(--glow-sm);
+    }
+    .msg-textarea::placeholder { color: var(--text-muted); }
+
+    .char-info {
+      text-align: right;
+      font-size: .7rem;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      margin-bottom: 14px;
+    }
+
+    .msg-options {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    .msg-option-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+    }
+    .msg-option-item input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+    .msg-option-label {
+      font-size: .85rem;
+      color: var(--text);
+    }
+    .delay-select {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-left: 28px;
+      font-size: .8rem;
+      color: var(--text-dim);
+    }
+    .delay-select select {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      font-size: .8rem;
+      outline: none;
+      cursor: pointer;
+    }
+    .delay-select select:focus {
+      border-color: var(--accent);
+    }
+    .password-input {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-left: 28px;
+      font-size: .8rem;
+      color: var(--text-dim);
+    }
+    .password-input input {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      font-size: .8rem;
+      font-family: 'JetBrains Mono', monospace;
+      outline: none;
+      width: 140px;
+    }
+    .password-input input:focus {
+      border-color: var(--accent);
+      box-shadow: var(--glow-sm);
+    }
+    .password-input input::placeholder { color: var(--text-muted); }
+    .btn-create {
+      width: 100%;
+      background: linear-gradient(135deg, #00e5a0, #00cc88);
+      color: #000;
+      border: none;
+      padding: 14px 24px;
+      border-radius: var(--radius-md);
+      font-size: .95rem;
+      font-weight: 700;
+      font-family: 'Inter', system-ui, sans-serif;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all var(--transition);
+      box-shadow: 0 0 20px rgba(0,229,160,.35);
+      letter-spacing: 1.5px;
+      margin-bottom: 12px;
+    }
+    .btn-create:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(0,229,160,.45);
+      filter: brightness(1.05);
+    }
+    .btn-create:active {
+      transform: scale(.98);
+    }
+    .msg-tip {
+      text-align: center;
+      font-size: .62rem;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 12px 24px;
+      border-radius: var(--radius-md);
+      font-size: .85rem;
+      box-shadow: 0 8px 32px rgba(0,0,0,.4);
+      opacity: 0;
+      transition: all .3s ease;
+      z-index: 1000;
+      white-space: nowrap;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    .toast.error {
+      border-color: #ff3366;
+      color: #ff3366;
+    }
+    .toast.success {
+      border-color: var(--success);
+      color: var(--success);
+    }
+
+    /* 隐藏类 */
+    .hidden { display: none !important; }
+
+    /* ── 分享弹窗 ── */
+    .share-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      opacity: 0;
+      transition: opacity .3s ease;
+      backdrop-filter: blur(4px);
+    }
+    .share-modal.show {
+      opacity: 1;
+    }
+    .share-modal-content {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 32px 28px;
+      max-width: 400px;
+      width: 90%;
+      text-align: center;
+    }
+    .share-modal-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+    .share-modal-tip {
+      font-size: .85rem;
+      color: var(--text-dim);
+      margin-bottom: 16px;
+    }
+    .share-link-box input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--accent);
+      padding: 12px 16px;
+      border-radius: var(--radius-md);
+      font-size: .8rem;
+      font-family: 'JetBrains Mono', monospace;
+      text-align: center;
+      outline: none;
+    }
+    .share-link-box input:focus {
+      border-color: var(--accent);
+    }
+    .share-modal-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #00e5a0, #00cc88);
+      color: #000;
+      border: none;
+      padding: 12px 24px;
+      border-radius: var(--radius-md);
+      font-size: .9rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 16px;
+    }
+    .share-modal-close {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 10px 24px;
+      border-radius: var(--radius-md);
+      font-size: .8rem;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .share-modal-close:hover {
+      border-color: var(--text-dim);
+      color: var(--text);
+    }
   </style>
 </head>
 <body>
@@ -483,8 +762,24 @@
       </div>
     </div>
 
-    <!-- 操作卡 -->
-    <div class="action">
+    <!-- 功能选择区 -->
+    <div class="feature-tabs">
+      <button class="feature-tab active" onclick="switchTab('chat')" id="tabChat">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        匿名聊天
+      </button>
+      <button class="feature-tab" onclick="switchTab('msg')" id="tabMsg">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+        </svg>
+        飘飘瓶
+      </button>
+    </div>
+
+    <!-- 操作卡 - 聊天室 -->
+    <div class="action" id="panelChat">
       <div class="action-label">创建或加入房间</div>
 
       <button class="btn-random" id="btnRandom" onclick="goRandom()">
@@ -512,6 +807,52 @@
       <div class="hint">房间号支持 4-8 位字母或数字</div>
     </div>
 
+    <!-- 操作卡 - 飘飘瓶 -->
+    <div class="action hidden" id="panelMsg">
+      <div class="action-label">🍶 创建匿名留言</div>
+
+      <textarea
+        class="msg-textarea"
+        id="msgInput"
+        placeholder="写下你想说的话…&#10;&#10;支持文字，匿名发送，无需注册。"
+        maxlength="5000"
+      ></textarea>
+
+      <div class="char-info">
+        <span id="charCount">0</span> / 5000
+      </div>
+
+      <div class="msg-options">
+        <label class="msg-option-item">
+          <input type="checkbox" id="selfDestruct" />
+          <span class="msg-option-label">💀 阅后即焚</span>
+        </label>
+        <div id="delaySelect" class="delay-select hidden">
+          <span>查看后</span>
+          <select id="destroyDelay">
+            <option value="10">10秒</option>
+            <option value="30">30秒</option>
+            <option value="60">60秒</option>
+            <option value="300">5分钟</option>
+          </select>
+          <span>销毁</span>
+        </div>
+        <label class="msg-option-item">
+          <input type="checkbox" id="usePassword" />
+          <span class="msg-option-label">🔐 口令保护</span>
+        </label>
+        <div id="passwordInput" class="password-input hidden">
+          <input type="password" id="msgPassword" placeholder="设置6位口令" maxlength="20" />
+        </div>
+      </div>
+
+      <button class="btn-create" id="btnCreate" onclick="createMessage()">
+        <span class="btn-icon">🚀</span> 创建留言
+      </button>
+
+      <div class="msg-tip">留言默认 24 小时后自动销毁 · 完全匿名 · 无需登录</div>
+    </div>
+
     <!-- 统计栏 -->
     <div class="stats">
       <div class="stat-item">
@@ -537,6 +878,18 @@
   </div>
 
   <script>
+    // ── Tab 切换 ──
+    let currentTab = 'chat';
+
+    function switchTab(tab) {
+      currentTab = tab;
+      document.getElementById('tabChat').classList.toggle('active', tab === 'chat');
+      document.getElementById('tabMsg').classList.toggle('active', tab === 'msg');
+      document.getElementById('panelChat').classList.toggle('hidden', tab !== 'chat');
+      document.getElementById('panelMsg').classList.toggle('hidden', tab !== 'msg');
+    }
+
+    // ── 聊天室 ──
     function genRoomCode() {
       const chars = 'abcdefghjkmnpqrstuvwxyz23456789';
       return Array.from({length: 6}, () =>
@@ -577,10 +930,133 @@
       if (e.key === 'Enter') goCustom();
     });
 
-    // 只允许字母数字输入
     document.getElementById('roomInput').addEventListener('input', function() {
       this.value = this.value.replace(/[^a-zA-Z0-9]/g, '');
     });
+
+    // ── 飘飘瓶 ──
+    const msgInput = document.getElementById('msgInput');
+    const charCount = document.getElementById('charCount');
+    const selfDestruct = document.getElementById('selfDestruct');
+    const delaySelect = document.getElementById('delaySelect');
+    const usePassword = document.getElementById('usePassword');
+    const passwordInput = document.getElementById('passwordInput');
+    const msgPassword = document.getElementById('msgPassword');
+
+    msgInput.addEventListener('input', function() {
+      charCount.textContent = this.value.length;
+    });
+
+    selfDestruct.addEventListener('change', function() {
+      delaySelect.classList.toggle('hidden', !this.checked);
+    });
+
+    usePassword.addEventListener('change', function() {
+      passwordInput.classList.toggle('hidden', !this.checked);
+      if (this.checked) msgPassword.focus();
+    });
+
+    function showToast(msg, type = 'info') {
+      const toast = document.getElementById('toast') || createToast();
+      toast.textContent = msg;
+      toast.className = 'toast ' + type;
+      setTimeout(() => toast.classList.add('show'), 10);
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+
+    function createToast() {
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.id = 'toast';
+      document.body.appendChild(toast);
+      return toast;
+    }
+
+    async function createMessage() {
+      const content = msgInput.value.trim();
+      if (!content) {
+        showToast('请输入留言内容', 'error');
+        msgInput.focus();
+        return;
+      }
+
+      const password = usePassword.checked ? msgPassword.value.trim() : '';
+      if (usePassword.checked && password.length < 4) {
+        showToast('口令至少4位', 'error');
+        msgPassword.focus();
+        return;
+      }
+
+      const btn = document.getElementById('btnCreate');
+      btn.disabled = true;
+      btn.textContent = '创建中...';
+
+      try {
+        const res = await fetch('/api/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content,
+            self_destruct: selfDestruct.checked,
+            destruction_delay: parseInt(document.getElementById('destroyDelay').value),
+            password: password || null
+          })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || '创建失败');
+        }
+
+        const shareLink = location.origin + '/msg/' + data.id;
+
+        // 复制链接（兼容穿透环境）
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(shareLink);
+            showToast('留言已创建，链接已复制！', 'success');
+          } else {
+            // 穿透环境下显示链接让用户手动复制
+            showShareModal(shareLink, data.id);
+            return;
+          }
+        } catch (e) {
+          // clipboard 失败也显示链接
+          showShareModal(shareLink, data.id);
+          return;
+        }
+
+        // 跳转到查看页
+        setTimeout(() => {
+          location.href = '/msg/' + data.id;
+        }, 1000);
+
+      } catch (e) {
+        showToast(e.message, 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<span class="btn-icon">🚀</span> 创建留言';
+      }
+    }
+
+    // 显示分享弹窗（穿透环境备选）
+    function showShareModal(link, msgId) {
+      const modal = document.createElement('div');
+      modal.className = 'share-modal';
+      modal.innerHTML = `
+        <div class="share-modal-content">
+          <div class="share-modal-title">🍶 留言已创建！</div>
+          <div class="share-modal-tip">请复制下方链接分享给朋友：</div>
+          <div class="share-link-box">
+            <input type="text" value="${link}" readonly onclick="this.select()" />
+          </div>
+          <button class="share-modal-btn" onclick="location.href='/msg/${msgId}'">查看我的留言</button>
+          <button class="share-modal-close" onclick="this.closest('.share-modal').remove()">关闭</button>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      setTimeout(() => modal.classList.add('show'), 10);
+    }
   </script>
 </body>
 </html>

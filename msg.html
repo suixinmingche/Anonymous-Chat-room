@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>飘飘瓶 — 匿名留言</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍶</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ── 设计令牌 ── */
+    :root {
+      --bg:         #0d0d14;
+      --surface:    #13131e;
+      --surface2:   #1a1a28;
+      --surface3:   #1f1f30;
+      --border:     #252538;
+      --border-dim: #1e1e2e;
+      --text:       #e8e8f5;
+      --text-dim:   #6b6b8a;
+      --text-muted: #3d3d58;
+      --accent:     #00e5ff;
+      --accent2:    #c400ff;
+      --accent-dim: #0099bb;
+      --success:    #00e5a0;
+      --danger:     #ff4466;
+      --glow:       0 0 24px rgba(0,229,255,.45);
+      --glow2:      0 0 24px rgba(196,0,255,.45);
+      --glow-sm:    0 0 12px rgba(0,229,255,.3);
+      --radius-sm:  6px;
+      --radius-md:  12px;
+      --radius-lg:  20px;
+      --transition: .2s cubic-bezier(.4,0,.2,1);
+    }
+
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg:         #f2f3f8;
+        --surface:    #ffffff;
+        --surface2:   #f7f8fc;
+        --surface3:   #eef0f7;
+        --border:     #e0e2ee;
+        --border-dim: #eceff7;
+        --text:       #18192b;
+        --text-dim:   #7a7d9a;
+        --text-muted: #b0b3cc;
+        --accent:     #0099cc;
+        --accent2:    #9900cc;
+        --accent-dim: #0077aa;
+        --success:    #00aa77;
+        --glow:       0 0 16px rgba(0,153,204,.35);
+        --glow2:      0 0 16px rgba(153,0,204,.25);
+        --glow-sm:    0 0 10px rgba(0,153,204,.25);
+      }
+    }
+
+    /* ── 基础 ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── 背景 ── */
+    .bg-glow {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .bg-glow::before {
+      content: '';
+      position: absolute;
+      top: -20%;
+      left: -10%;
+      width: 60%;
+      height: 70%;
+      background: radial-gradient(ellipse, rgba(0,229,255,.07) 0%, transparent 70%);
+      animation: driftA 20s ease-in-out infinite alternate;
+    }
+    .bg-glow::after {
+      content: '';
+      position: absolute;
+      bottom: -20%;
+      right: -10%;
+      width: 60%;
+      height: 70%;
+      background: radial-gradient(ellipse, rgba(196,0,255,.07) 0%, transparent 70%);
+      animation: driftB 24s ease-in-out infinite alternate;
+    }
+    @keyframes driftA { from { transform: translate(0,0) scale(1); } to { transform: translate(5%,3%) scale(1.1); } }
+    @keyframes driftB { from { transform: translate(0,0) scale(1); } to { transform: translate(-4%,-5%) scale(1.08); } }
+
+    .bg-grid {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background-image:
+        linear-gradient(var(--border-dim) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border-dim) 1px, transparent 1px);
+      background-size: 56px 56px;
+      opacity: .4;
+      mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+    }
+
+    /* ── 顶栏 ── */
+    .topbar {
+      background: rgba(10, 10, 18, 0.95);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      z-index: 10;
+      flex-shrink: 0;
+    }
+    .topbar::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent), var(--accent2), transparent);
+      opacity: .4;
+    }
+
+    .back-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: .85rem;
+      font-weight: 500;
+      transition: color var(--transition);
+    }
+    .back-link:hover {
+      color: var(--accent);
+    }
+
+    .logo-small {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .logo-icon-small {
+      font-size: 1.4rem;
+    }
+
+    .timer-badge {
+      background: var(--danger);
+      color: #fff;
+      padding: 4px 12px;
+      border-radius: var(--radius-sm);
+      font-size: .75rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      animation: pulse 1s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .7; }
+    }
+
+    /* ── 主内容 ── */
+    .main {
+      flex: 1;
+      padding: 32px 20px;
+      position: relative;
+      z-index: 1;
+      max-width: 640px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* ── 销毁提示 ── */
+    .destroyed-notice {
+      text-align: center;
+      padding: 60px 20px;
+    }
+    .destroyed-icon {
+      font-size: 4rem;
+      margin-bottom: 20px;
+    }
+    .destroyed-notice h2 {
+      font-size: 1.5rem;
+      color: var(--danger);
+      margin-bottom: 12px;
+    }
+    .destroyed-notice p {
+      color: var(--text-dim);
+      margin-bottom: 30px;
+    }
+    .btn-home {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #000;
+      padding: 12px 24px;
+      border-radius: var(--radius-md);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: .9rem;
+      transition: all var(--transition);
+      box-shadow: var(--glow);
+    }
+    .btn-home:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.05);
+    }
+
+    /* ── 留言卡片 ── */
+    .msg-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin-bottom: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .msg-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent), var(--accent2), transparent);
+      opacity: .5;
+    }
+
+    .msg-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .msg-time {
+      font-size: .72rem;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .badge-destruct {
+      padding: 3px 10px;
+      border-radius: var(--radius-sm);
+      font-size: .7rem;
+      font-weight: 600;
+    }
+    .badge-destruct.danger {
+      background: rgba(255, 68, 102, .15);
+      color: var(--danger);
+    }
+    .badge-destruct.warning {
+      background: rgba(0, 229, 160, .15);
+      color: var(--success);
+    }
+    .msg-content {
+      font-size: .95rem;
+      line-height: 1.8;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    /* ── 对话区 ── */
+    .replies-section {
+      margin-bottom: 24px;
+    }
+    .replies-title {
+      font-size: .8rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 16px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .reply-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      margin-bottom: 12px;
+    }
+    .reply-meta {
+      font-size: .68rem;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      margin-bottom: 8px;
+    }
+    .reply-content {
+      font-size: .88rem;
+      line-height: 1.6;
+      color: var(--text);
+      white-space: pre-wrap;
+    }
+
+    /* ── 回复框 ── */
+    .reply-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+    .reply-textarea {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 14px 16px;
+      border-radius: var(--radius-md);
+      font-size: .9rem;
+      font-family: 'Inter', system-ui, sans-serif;
+      resize: vertical;
+      min-height: 80px;
+      outline: none;
+      transition: border var(--transition), box-shadow var(--transition);
+      margin-bottom: 12px;
+    }
+    .reply-textarea:focus {
+      border-color: var(--accent);
+      box-shadow: var(--glow-sm);
+    }
+    .reply-textarea::placeholder { color: var(--text-muted); }
+
+    .reply-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .reply-char-count {
+      font-size: .7rem;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .btn-reply {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      border-radius: var(--radius-sm);
+      font-size: .85rem;
+      font-weight: 600;
+      font-family: 'Inter', system-ui, sans-serif;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all var(--transition);
+      box-shadow: var(--glow-sm);
+    }
+    .btn-reply:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+    }
+    .btn-reply:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* ── 危险操作 ── */
+    .danger-zone {
+      text-align: center;
+      padding: 20px;
+    }
+    .btn-danger {
+      background: transparent;
+      border: 1px solid var(--danger);
+      color: var(--danger);
+      padding: 10px 20px;
+      border-radius: var(--radius-sm);
+      font-size: .8rem;
+      font-family: 'Inter', system-ui, sans-serif;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .btn-danger:hover {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    /* ── 弹窗 ── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 20px;
+    }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      max-width: 400px;
+      width: 100%;
+    }
+    .modal h3 {
+      font-size: 1.1rem;
+      margin-bottom: 12px;
+      color: var(--danger);
+    }
+    .modal p {
+      font-size: .88rem;
+      color: var(--text-dim);
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+    .btn-cancel {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 20px;
+      border-radius: var(--radius-sm);
+      font-size: .85rem;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .btn-cancel:hover {
+      border-color: var(--text-dim);
+    }
+    .btn-confirm-danger {
+      background: var(--danger);
+      border: none;
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: var(--radius-sm);
+      font-size: .85rem;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .btn-confirm-danger:hover {
+      filter: brightness(1.1);
+    }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 12px 24px;
+      border-radius: var(--radius-md);
+      font-size: .85rem;
+      box-shadow: 0 8px 32px rgba(0,0,0,.4);
+      opacity: 0;
+      transition: all .3s ease;
+      z-index: 1000;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.error { border-color: var(--danger); color: var(--danger); }
+    .toast.success { border-color: var(--success); color: var(--success); }
+
+    .hidden { display: none !important; }
+
+    /* ── 口令验证 ── */
+    .password-gate {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+    }
+    .password-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 40px 32px;
+      text-align: center;
+      max-width: 360px;
+      width: 100%;
+    }
+    .password-icon {
+      font-size: 3rem;
+      margin-bottom: 16px;
+    }
+    .password-card h2 {
+      font-size: 1.3rem;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .password-card p {
+      font-size: .85rem;
+      color: var(--text-dim);
+      margin-bottom: 24px;
+    }
+    .password-input-field {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 14px 16px;
+      border-radius: var(--radius-md);
+      font-size: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      text-align: center;
+      outline: none;
+      transition: border var(--transition), box-shadow var(--transition);
+      margin-bottom: 16px;
+    }
+    .password-input-field:focus {
+      border-color: var(--accent);
+      box-shadow: var(--glow-sm);
+    }
+    .password-input-field::placeholder {
+      color: var(--text-muted);
+      font-family: 'Inter', system-ui, sans-serif;
+    }
+    .btn-verify {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #000;
+      border: none;
+      padding: 14px 24px;
+      border-radius: var(--radius-md);
+      font-size: .95rem;
+      font-weight: 700;
+      font-family: 'Inter', system-ui, sans-serif;
+      cursor: pointer;
+      transition: all var(--transition);
+      box-shadow: var(--glow);
+    }
+    .btn-verify:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.05);
+    }
+    .btn-verify:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .verify-error {
+      color: var(--danger);
+      font-size: .8rem;
+      margin-top: 12px;
+    }
+
+    /* ── 响应式 ── */
+    @media (max-width: 480px) {
+      .main { padding: 20px 16px; }
+      .msg-card { padding: 20px 16px; }
+      .modal { margin: 0 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-glow"></div>
+  <div class="bg-grid"></div>
+
+  <!-- 顶栏 -->
+  <div class="topbar">
+    <a href="/" class="back-link">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+      首页
+    </a>
+    <div class="logo-small">
+      <span class="logo-icon-small">🍶</span>
+      <span>飘飘瓶</span>
+    </div>
+    <div id="timerBadge" class="timer-badge hidden"></div>
+  </div>
+
+  <!-- 主内容 -->
+  <div class="main">
+    <!-- 销毁提示 -->
+    <div id="destroyedNotice" class="destroyed-notice hidden">
+      <div class="destroyed-icon">💀</div>
+      <h2>该留言已销毁</h2>
+      <p>内容已被永久删除，无法恢复。</p>
+      <a href="/" class="btn-home">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        </svg>
+        写一条新留言
+      </a>
+    </div>
+
+    <!-- 口令验证 -->
+    <div id="passwordGate" class="password-gate hidden">
+      <div class="password-card">
+        <div class="password-icon">🔐</div>
+        <h2>口令验证</h2>
+        <p>这条留言受口令保护</p>
+        <input
+          type="password"
+          id="verifyPassword"
+          class="password-input-field"
+          placeholder="请输入口令"
+          maxlength="20"
+        />
+        <button class="btn-verify" id="btnVerify" onclick="verifyPassword()">
+          验证
+        </button>
+        <div id="verifyError" class="verify-error hidden">口令错误</div>
+      </div>
+    </div>
+
+    <!-- 留言内容 -->
+    <div id="messageView" class="hidden">
+      <div class="msg-card">
+        <div class="msg-meta">
+          <span id="msgTime" class="msg-time"></span>
+          <span id="selfDestructBadge" class="badge-destruct hidden">🔥 阅后即焚</span>
+        </div>
+        <div id="msgContent" class="msg-content"></div>
+      </div>
+
+      <!-- 对话 -->
+      <div class="replies-section">
+        <h3 class="replies-title">对话</h3>
+        <div id="repliesList"></div>
+      </div>
+
+      <!-- 回复框 -->
+      <div class="reply-card">
+        <textarea
+          id="replyInput"
+          class="reply-textarea"
+          placeholder="写下回复…"
+          maxlength="2000"
+        ></textarea>
+        <div class="reply-actions">
+          <span id="replyCharCount" class="reply-char-count">0 / 2000</span>
+          <button class="btn-reply" id="btnReply" onclick="sendReply()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="22" y1="2" x2="11" y2="13"/>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+            发送回复
+          </button>
+        </div>
+      </div>
+
+      <!-- 销毁按钮 -->
+      <div class="danger-zone">
+        <button class="btn-danger" onclick="showDestroyModal()">
+          🗑 销毁这条留言
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 销毁确认弹窗 -->
+  <div id="modalOverlay" class="modal-overlay hidden" onclick="closeModal()">
+    <div class="modal" onclick="event.stopPropagation()">
+      <h3>确认销毁</h3>
+      <p>销毁后内容将永久删除，无法恢复。<br>确定要销毁这条留言吗？</p>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeModal()">取消</button>
+        <button class="btn-confirm-danger" onclick="destroyMessage()">确认销毁</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
+
+  <script>
+    const msgId = location.pathname.split('/msg/')[1];
+    let countdownInterval = null;
+    let messageData = null;
+    let currentPassword = null;
+
+    // 页面加载
+    async function init() {
+      if (!msgId) {
+        location.href = '/';
+        return;
+      }
+
+      // 先检查是否需要口令（不带口令获取）
+      try {
+        const res = await fetch('/api/messages/' + msgId);
+        const data = await res.json();
+
+        if (!res.ok) {
+          if (data.need_password) {
+            // 需要口令，显示验证界面
+            showPasswordGate();
+            return;
+          }
+          if (data.destroyed) {
+            showDestroyed();
+          } else {
+            showToast(data.error || '留言不存在', 'error');
+            setTimeout(() => location.href = '/', 2000);
+          }
+          return;
+        }
+
+        messageData = data;
+        renderMessage(data);
+
+        // 有过期时间就显示倒计时（包括默认的24小时 + 阅后即焚）
+        if (data.expires_at) {
+          startCountdown(data.expires_at);
+        }
+      } catch (e) {
+        showToast('加载失败', 'error');
+        setTimeout(() => location.href = '/', 2000);
+      }
+    }
+
+    // 显示口令验证界面
+    function showPasswordGate() {
+      document.getElementById('passwordGate').classList.remove('hidden');
+      document.getElementById('messageView').classList.add('hidden');
+      document.getElementById('timerBadge').classList.add('hidden');
+      setTimeout(() => {
+        document.getElementById('verifyPassword').focus();
+      }, 100);
+    }
+
+    // 验证口令
+    async function verifyPassword() {
+      const password = document.getElementById('verifyPassword').value.trim();
+      if (!password) {
+        showVerifyError('请输入口令');
+        return;
+      }
+
+      const btn = document.getElementById('btnVerify');
+      btn.disabled = true;
+      btn.textContent = '验证中...';
+
+      try {
+        const res = await fetch('/api/messages/' + msgId + '/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+
+        const data = await res.json();
+
+        if (data.success && data.verified) {
+          currentPassword = password;
+          document.getElementById('passwordGate').classList.add('hidden');
+          loadMessageWithPassword(password);
+        } else {
+          showVerifyError(data.error || '口令错误');
+          document.getElementById('verifyPassword').value = '';
+          document.getElementById('verifyPassword').focus();
+        }
+      } catch (e) {
+        showVerifyError('验证失败');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '验证';
+      }
+    }
+
+    function showVerifyError(msg) {
+      const error = document.getElementById('verifyError');
+      error.textContent = msg;
+      error.classList.remove('hidden');
+      setTimeout(() => error.classList.add('hidden'), 2500);
+    }
+
+    // 用口令加载留言
+    async function loadMessageWithPassword(password) {
+      try {
+        const res = await fetch('/api/messages/' + msgId + '/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          if (data.need_password) {
+            showPasswordGate();
+          } else {
+            showToast(data.error || '加载失败', 'error');
+            setTimeout(() => location.href = '/', 2000);
+          }
+          return;
+        }
+
+        // 用口令获取完整留言
+        const msgRes = await fetch('/api/messages/' + msgId + '/' + encodeURIComponent(password));
+        const msgData = await msgRes.json();
+
+        if (!msgRes.ok) {
+          showToast(msgData.error || '加载失败', 'error');
+          setTimeout(() => location.href = '/', 2000);
+          return;
+        }
+
+        messageData = msgData;
+        renderMessage(msgData);
+
+        if (msgData.expires_at) {
+          startCountdown(msgData.expires_at);
+        }
+      } catch (e) {
+        showToast('加载失败', 'error');
+        setTimeout(() => location.href = '/', 2000);
+      }
+    }
+
+    function renderMessage(msg) {
+      document.getElementById('messageView').classList.remove('hidden');
+
+      // 时间格式化
+      const time = new Date(msg.created_at);
+      document.getElementById('msgTime').textContent =
+        time.toLocaleString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+      // 内容
+      document.getElementById('msgContent').textContent = msg.content;
+
+        // 过期标记
+      const badge = document.getElementById('selfDestructBadge');
+      if (msg.self_destruct) {
+        badge.textContent = '🔥 阅后即焚';
+        badge.className = 'badge-destruct danger';
+        badge.classList.remove('hidden');
+      } else {
+        // 没有阅后即焚但有 24 小时过期
+        badge.textContent = '⏰ 24小时过期';
+        badge.className = 'badge-destruct warning';
+        badge.classList.remove('hidden');
+      }
+
+      // 回复列表
+      renderReplies(msg.replies || []);
+    }
+
+    function renderReplies(replies) {
+      const list = document.getElementById('repliesList');
+      if (!replies.length) {
+        list.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem;">暂无回复</p>';
+        return;
+      }
+
+      list.innerHTML = replies.map(r => `
+        <div class="reply-item">
+          <div class="reply-meta">${new Date(r.created_at).toLocaleString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+          <div class="reply-content">${escapeHtml(r.content)}</div>
+        </div>
+      `).join('');
+    }
+
+    function startCountdown(expiresAt) {
+      const badge = document.getElementById('timerBadge');
+      badge.classList.remove('hidden');
+
+      function update() {
+        const remaining = new Date(expiresAt) - Date.now();
+        if (remaining <= 0) {
+          badge.textContent = '已销毁';
+          showDestroyed();
+          clearInterval(countdownInterval);
+          return;
+        }
+        const seconds = Math.ceil(remaining / 1000);
+        badge.textContent = seconds + 's';
+      }
+
+      update();
+      countdownInterval = setInterval(update, 1000);
+    }
+
+    function showDestroyed() {
+      document.getElementById('destroyedNotice').classList.remove('hidden');
+      document.getElementById('messageView').classList.add('hidden');
+      document.getElementById('timerBadge').classList.add('hidden');
+      if (countdownInterval) clearInterval(countdownInterval);
+    }
+
+    // 回复
+    const replyInput = document.getElementById('replyInput');
+    const replyCharCount = document.getElementById('replyCharCount');
+
+    replyInput.addEventListener('input', function() {
+      replyCharCount.textContent = this.value.length + ' / 2000';
+    });
+
+    async function sendReply() {
+      const content = replyInput.value.trim();
+      if (!content) {
+        showToast('请输入回复内容', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('btnReply');
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/messages/' + msgId + '/replies', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content, password: currentPassword || '' })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || '发送失败');
+        }
+
+        showToast('回复发送成功', 'success');
+        replyInput.value = '';
+        replyCharCount.textContent = '0 / 2000';
+
+        // 刷新留言
+        const msgRes = await fetch('/api/messages/' + msgId);
+        const msgData = await msgRes.json();
+        if (msgRes.ok) {
+          renderReplies(msgData.replies || []);
+        }
+
+      } catch (e) {
+        showToast(e.message, 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // 销毁
+    function showDestroyModal() {
+      document.getElementById('modalOverlay').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('modalOverlay').classList.add('hidden');
+    }
+
+    async function destroyMessage() {
+      try {
+        const res = await fetch('/api/messages/' + msgId, { method: 'DELETE' });
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || '销毁失败');
+        }
+
+        closeModal();
+        showDestroyed();
+        showToast('留言已销毁', 'success');
+
+      } catch (e) {
+        showToast(e.message, 'error');
+      }
+    }
+
+    // 工具
+    function showToast(msg, type = 'info') {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.className = 'toast ' + type;
+      setTimeout(() => toast.classList.add('show'), 10);
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // 回车键验证口令
+    document.getElementById('verifyPassword').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') verifyPassword();
+    });
+
+    // 初始化
+    init();
+  </script>
+</body>
+</html>
