@@ -1,7 +1,8 @@
 # 匿名聊天室 💬
 
 一个简单、轻量级的匿名聊天和留言应用，无需注册，保护隐私。
-图片宽度="730" 高度="464" alt="图片" src="https://github.com/user-attachments/assets/29f3a22f-6951-4961-9119-5e6ec926c821" />
+<img width="730" height="464" alt="image" src="https://github.com/user-attachments/assets/29f3a22f-6951-4961-9119-5e6ec926c821" />
+
 ### 🌏临时示例地址http://140.245.72.104/
 ## ✨ 功能特性
 
