@@ -24,8 +24,8 @@
 
 ```bash
 # 克隆仓库
-git clone https://github.com/suixinmingche/nimingliaotianshi.git
-cd nimingliaotianshi
+git clone https://github.com/suixinmingche/Anonymous-Chat-room.git
+cd Anonymous-Chat-room
 
 # 安装依赖
 npm install
