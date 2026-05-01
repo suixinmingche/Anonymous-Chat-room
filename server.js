@@ -17,8 +17,9 @@ const PING_INTERVAL  = 25 * 1000;       // 心跳间隔 25s
 const PING_TIMEOUT   = 10 * 1000;       // 未响应 10s 后踢出
 const MAX_MSG_LEN    = 500;             // 文字消息最大字符数
 const MAX_IMG_BYTES  = 700 * 1024;      // 图片消息最大字节（700KB，含Base64开销）
-const MAX_ROOMS      = 2000;            // 最多同时存在房间数
-const MAX_CLIENTS_PER_ROOM = 50;        // 每个房间最多人数
+const MAX_ROOMS               = 2000;            // 最多同时存在房间数
+const MAX_CLIENTS_PER_ROOM    = 50;              // 每个房间最多人数
+const MAX_GLOBAL_CLIENTS      = 500;             // 全局最多 WebSocket 连接数
 
 // ── 飘飘瓶配置 ────────────────────────────────────────
 const DATA_FILE = path.join(__dirname, 'data', 'messages.json');
@@ -484,6 +485,15 @@ wss.on('close', () => clearInterval(pingTimer));
 
 // ── 连接处理 ─────────────────────────────────────────
 wss.on('connection', (ws, req) => {
+  // 全局连接数限制（保护免费实例内存）
+  if (wss.clients.size > MAX_GLOBAL_CLIENTS) {
+    try {
+      ws.send(JSON.stringify({ type: 'system', text: '服务器繁忙，请稍后再试' }));
+      ws.close();
+    } catch (_) {}
+    return;
+  }
+
   const clientId = ++clientSeq;
   let currentRoom = null;
   let clientInfo   = null;

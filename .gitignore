@@ -1,2 +1,43 @@
+# 依赖
 node_modules/
+
+# WorkBuddy 工作文件
 .workbuddy/
+
+# 用户数据（不要提交真实用户数据）
+data/messages.json
+
+# 日志文件
+logs/
+*.log
+
+# 环境变量和密钥
+.env
+.env.local
+.env.*.local
+
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE 配置
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 临时文件
+*.tmp
+*.temp
+*.bak
+
+# 压缩包
+*.zip
+*.tar
+*.tar.gz
+*.rar
+
+# GitNexus 索引文件
+.gitnexus/
