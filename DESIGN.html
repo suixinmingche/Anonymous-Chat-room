@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>匿名聊天室 — 项目设计文档</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d0d14;
+      --surface: #13131e;
+      --surface2: #1a1a28;
+      --surface3: #1f1f30;
+      --border: #252538;
+      --text: #e8e8f5;
+      --text-muted: #8888aa;
+      --accent: #00e5ff;
+      --accent2: #c400ff;
+      --burn: #ff3366;
+      --success: #00e5a0;
+      --warning: #ffaa00;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      min-height: 100vh;
+    }
+
+    /* 背景光晕 */
+    body::before,
+    body::after {
+      content: '';
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.15;
+      pointer-events: none;
+      z-index: -1;
+    }
+    body::before {
+      width: 600px;
+      height: 600px;
+      background: var(--accent);
+      top: -200px;
+      right: -100px;
+      animation: driftA 20s ease-in-out infinite;
+    }
+    body::after {
+      width: 500px;
+      height: 500px;
+      background: var(--accent2);
+      bottom: -150px;
+      left: -100px;
+      animation: driftB 24s ease-in-out infinite;
+    }
+
+    @keyframes driftA {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(-80px, 60px); }
+    }
+    @keyframes driftB {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(60px, -80px); }
+    }
+
+    /* 导航栏 */
+    .toc {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 260px;
+      height: 100vh;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 24px 0;
+      overflow-y: auto;
+      z-index: 100;
+    }
+
+    .toc-header {
+      padding: 0 24px 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 16px;
+    }
+
+    .toc-logo {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .toc-title {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .toc-nav {
+      list-style: none;
+    }
+
+    .toc-section {
+      padding: 8px 24px;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-top: 16px;
+    }
+
+    .toc-item {
+      display: block;
+      padding: 8px 24px;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 13px;
+      transition: all 0.2s;
+      border-left: 2px solid transparent;
+    }
+
+    .toc-item:hover {
+      color: var(--text);
+      background: var(--surface2);
+      border-left-color: var(--accent);
+    }
+
+    .toc-item.active {
+      color: var(--accent);
+      background: rgba(0, 229, 255, 0.08);
+      border-left-color: var(--accent);
+    }
+
+    /* 主内容区 */
+    .main {
+      margin-left: 260px;
+      padding: 48px 64px 96px;
+      max-width: 900px;
+    }
+
+    /* 页面标题 */
+    .page-header {
+      margin-bottom: 48px;
+      padding-bottom: 32px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .page-header h1 {
+      font-size: 36px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 12px;
+    }
+
+    .page-meta {
+      display: flex;
+      gap: 24px;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    .page-meta span {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* 章节 */
+    .section {
+      margin-bottom: 64px;
+      scroll-margin-top: 32px;
+    }
+
+    .section h2 {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section h2 .num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #000;
+    }
+
+    .section h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 32px 0 16px;
+      color: var(--text);
+    }
+
+    .section h4 {
+      font-size: 15px;
+      font-weight: 600;
+      margin: 24px 0 12px;
+      color: var(--text);
+    }
+
+    .section p {
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    /* 特性卡片 */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+      margin: 20px 0;
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+
+    .feature-item:hover {
+      border-color: var(--accent);
+      background: var(--surface2);
+    }
+
+    .feature-item .icon {
+      font-size: 16px;
+    }
+
+    /* 表格 */
+    .table-wrap {
+      overflow-x: auto;
+      margin: 20px 0;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    thead {
+      background: var(--surface2);
+    }
+
+    th {
+      padding: 12px 16px;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text);
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 12px 16px;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: var(--surface2);
+    }
+
+    /* 代码块 */
+    pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin: 16px 0;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      color: var(--text);
+    }
+
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9em;
+      background: var(--surface2);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--accent);
+    }
+
+    pre code {
+      background: none;
+      padding: 0;
+      color: inherit;
+    }
+
+    /* SVG 容器 */
+    .svg-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin: 20px 0;
+      overflow-x: auto;
+    }
+
+    /* 架构图 */
+    .arch-diagram {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin: 20px 0;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      line-height: 1.5;
+      color: var(--text-muted);
+    }
+
+    /* 引用块 */
+    blockquote {
+      background: var(--surface);
+      border-left: 3px solid var(--accent);
+      padding: 16px 20px;
+      margin: 20px 0;
+      border-radius: 0 10px 10px 0;
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    blockquote p {
+      margin: 0;
+    }
+
+    /* 状态标签 */
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .tag-success {
+      background: rgba(0, 229, 160, 0.15);
+      color: var(--success);
+    }
+
+    .tag-warning {
+      background: rgba(255, 170, 0, 0.15);
+      color: var(--warning);
+    }
+
+    .tag-danger {
+      background: rgba(255, 51, 102, 0.15);
+      color: var(--burn);
+    }
+
+    .tag-info {
+      background: rgba(0, 229, 255, 0.15);
+      color: var(--accent);
+    }
+
+    /* 模块卡片 */
+    .module-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin: 20px 0;
+    }
+
+    .module-card h4 {
+      margin-top: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* 步骤列表 */
+    .steps {
+      counter-reset: step;
+      list-style: none;
+      margin: 16px 0;
+    }
+
+    .steps li {
+      counter-increment: step;
+      position: relative;
+      padding-left: 40px;
+      margin-bottom: 12px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .steps li::before {
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 24px;
+      height: 24px;
+      background: var(--accent);
+      color: #000;
+      border-radius: 50%;
+      font-size: 11px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* 动画卡片 */
+    .anim-demo {
+      display: flex;
+      gap: 16px;
+      margin: 20px 0;
+      flex-wrap: wrap;
+    }
+
+    .anim-card {
+      flex: 1;
+      min-width: 120px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .anim-card .anim-name {
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .anim-card .anim-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--accent);
+    }
+
+    /* 页脚 */
+    .footer {
+      text-align: center;
+      padding: 32px 0;
+      border-top: 1px solid var(--border);
+      margin-top: 64px;
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    /* 响应式 */
+    @media (max-width: 900px) {
+      .toc {
+        display: none;
+      }
+      .main {
+        margin-left: 0;
+        padding: 32px 24px;
+      }
+    }
+
+    /* 滚动条 */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+<!-- 侧边导航 -->
+<nav class="toc">
+  <div class="toc-header">
+    <div class="toc-logo">Design Docs</div>
+    <div class="toc-title">匿名聊天室 v1.0.0</div>
+  </div>
+  <ul class="toc-nav">
+    <li class="toc-section">概览</li>
+    <a href="#section1" class="toc-item">项目简介</a>
+    <a href="#section2" class="toc-item">核心特性</a>
+    <a href="#section3" class="toc-item">技术栈</a>
+    <a href="#section4" class="toc-item">项目结构</a>
+    <li class="toc-section">架构</li>
+    <a href="#section5" class="toc-item">系统架构</a>
+    <a href="#section6" class="toc-item">路由设计</a>
+    <li class="toc-section">功能</li>
+    <a href="#section7" class="toc-item">匿名聊天室</a>
+    <a href="#section8" class="toc-item">飘飘瓶留言</a>
+    <li class="toc-section">安全</li>
+    <a href="#section9" class="toc-item">安全机制</a>
+    <li class="toc-section">部署</li>
+    <a href="#section10" class="toc-item">部署方案</a>
+    <li class="toc-section">参考</li>
+    <a href="#section11" class="toc-item">API 文档</a>
+    <a href="#section12" class="toc-item">配置参数</a>
+  </ul>
+</nav>
+
+<!-- 主内容 -->
+<main class="main">
+
+  <!-- 页面标题 -->
+  <header class="page-header">
+    <h1>匿名聊天室</h1>
+    <p style="color: var(--text-muted); font-size: 15px; margin-bottom: 16px;">项目设计文档 v1.0.0</p>
+    <div class="page-meta">
+      <span>📅 2026-05-01</span>
+      <span>✍️ 随心名彻</span>
+      <span>📁 9 章节</span>
+    </div>
+  </header>
+
+  <!-- 一、项目概述 -->
+  <section class="section" id="section1">
+    <h2><span class="num">一</span>项目概述</h2>
+    
+    <h3>1.1 项目简介</h3>
+    <p><strong>匿名聊天室</strong>是一款专注于隐私保护的临时对话工具，包含两大核心功能模块：</p>
+    
+    <div class="feature-grid">
+      <div class="feature-item">
+        <span class="icon">💬</span>
+        <span><strong>匿名聊天室</strong> — 随机房间号 + WebSocket 实时聊天</span>
+      </div>
+      <div class="feature-item">
+        <span class="icon">🍶</span>
+        <span><strong>飘飘瓶</strong> — 匿名留言 + 口令保护 + 阅后即焚</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 二、核心特性 -->
+  <section class="section" id="section2">
+    <h2><span class="num">二</span>核心特性</h2>
+    
+    <div class="feature-grid">
+      <div class="feature-item"><span class="icon">🚫</span> 无注册 — 无需账号、手机号、邮箱</div>
+      <div class="feature-item"><span class="icon">🗑️</span> 无记录 — 不存储聊天记录</div>
+      <div class="feature-item"><span class="icon">🎭</span> 完全匿名 — 随机生成昵称</div>
+      <div class="feature-item"><span class="icon">🔥</span> 阅后即焚 — 消息自动销毁</div>
+      <div class="feature-item"><span class="icon">🔐</span> 口令保护 — 飘飘瓶密码加密</div>
+      <div class="feature-item"><span class="icon">⏰</span> 24h 过期 — 飘飘瓶自动销毁</div>
+      <div class="feature-item"><span class="icon">📷</span> 图片发送 — 支持 Base64 图片</div>
+      <div class="feature-item"><span class="icon">📱</span> 响应式 — 适配桌面端与移动端</div>
+      <div class="feature-item"><span class="icon">🌙</span> 暗色/亮色 — 支持系统主题切换</div>
+    </div>
+  </section>
+
+  <!-- 三、技术栈 -->
+  <section class="section" id="section3">
+    <h2><span class="num">三</span>技术栈</h2>
+    
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>层级</th><th>技术选型</th><th>说明</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>后端</strong></td><td>Node.js + <code>ws</code></td><td>无框架，轻量高效</td></tr>
+          <tr><td><strong>前端</strong></td><td>原生 HTML/CSS/JS</td><td>无框架依赖，约 3000 行代码</td></tr>
+          <tr><td><strong>存储</strong></td><td>JSON 文件</td><td><code>data/messages.json</code></td></tr>
+          <tr><td><strong>通信</strong></td><td>WebSocket</td><td>聊天室实时通信</td></tr>
+          <tr><td><strong>加密</strong></td><td>SHA256</td><td>口令保护</td></tr>
+          <tr><td><strong>部署</strong></td><td>Docker (node:18-alpine)</td><td>ModelScope 创空间</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 四、项目结构 -->
+  <section class="section" id="section4">
+    <h2><span class="num">四</span>项目结构</h2>
+    
+    <pre><code>20260324091103/
+├── server.js          # 后端核心（HTTP + WebSocket + API）
+├── index.html         # 首页（Tab 切换：聊天室 / 飘飘瓶）
+├── chat.html          # 聊天室页面
+├── msg.html           # 飘飘瓶留言页
+├── package.json       # 项目配置（依赖 ws）
+├── Dockerfile         # Docker 部署配置
+└── data/
+    └── messages.json  # 飘飘瓶留言数据存储</code></pre>
+  </section>
+
+  <!-- 五、系统架构 -->
+  <section class="section" id="section5">
+    <h2><span class="num">五</span>系统架构</h2>
+    
+    <h3>5.1 架构图</h3>
+    
+    <!-- GitNexus 系统架构图 -->
+    <div class="svg-wrap">
+    <svg viewBox="0 0 680 520" width="100%" role="img" xmlns="http://www.w3.org/2000/svg">
+  <title>飘飘瓶 + 匿名聊天室 系统架构图</title>
+  <desc>Node.js + WebSocket + JSON文件存储的匿名聊天系统架构</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+
+  <!-- 标题 -->
+  <text x="340" y="35" text-anchor="middle" font-size="16" font-weight="500" fill="#00e5ff">飘飘瓶 + 匿名聊天室 系统架构</text>
+
+  <!-- 客户端层 -->
+  <rect x="40" y="60" width="600" height="100" rx="12" fill="#1a1a28" stroke="#00e5ff" stroke-width="0.8"/>
+  <text x="340" y="82" text-anchor="middle" font-size="13" font-weight="500" fill="#00e5ff">客户端层</text>
+  
+  <!-- 浏览器客户端 -->
+  <rect x="80" y="100" width="150" height="40" rx="8" fill="#13131e" stroke="#00e5ff" stroke-width="0.5"/>
+  <text x="155" y="124" text-anchor="middle" font-size="13" fill="#e8e8f5">index.html</text>
+  <text x="155" y="136" text-anchor="middle" font-size="11" fill="#8888aa">首页入口</text>
+  
+  <rect x="265" y="100" width="150" height="40" rx="8" fill="#13131e" stroke="#00e5ff" stroke-width="0.5"/>
+  <text x="340" y="124" text-anchor="middle" font-size="13" fill="#e8e8f5">chat.html</text>
+  <text x="340" y="136" text-anchor="middle" font-size="11" fill="#8888aa">匿名聊天室</text>
+  
+  <rect x="450" y="100" width="150" height="40" rx="8" fill="#13131e" stroke="#00e5ff" stroke-width="0.5"/>
+  <text x="525" y="124" text-anchor="middle" font-size="13" fill="#e8e8f5">msg.html</text>
+  <text x="525" y="136" text-anchor="middle" font-size="11" fill="#8888aa">飘飘瓶查看</text>
+
+  <!-- 连接线 -->
+  <line x1="340" y1="160" x2="340" y2="190" stroke="#00e5ff" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- 服务器层 -->
+  <rect x="40" y="190" width="600" height="180" rx="12" fill="#13131e" stroke="#00e5a0" stroke-width="0.8"/>
+  <text x="340" y="212" text-anchor="middle" font-size="13" font-weight="500" fill="#00e5a0">Node.js 服务器层</text>
+
+  <!-- HTTP 服务器 -->
+  <rect x="80" y="240" width="180" height="110" rx="8" fill="#0d0d14" stroke="#00e5a0" stroke-width="0.5"/>
+  <text x="170" y="260" text-anchor="middle" font-size="12" font-weight="500" fill="#00e5a0">HTTP 服务器</text>
+  <text x="170" y="280" text-anchor="middle" font-size="11" fill="#8888aa">端口 3000</text>
+  <text x="170" y="300" text-anchor="middle" font-size="10" fill="#8888aa">原生 http.createServer</text>
+  <text x="170" y="320" text-anchor="middle" font-size="10" fill="#8888aa">静态文件服务</text>
+  <text x="170" y="340" text-anchor="middle" font-size="10" fill="#8888aa">REST API 路由</text>
+
+  <!-- WebSocket 服务器 -->
+  <rect x="300" y="240" width="180" height="110" rx="8" fill="#0d0d14" stroke="#00e5a0" stroke-width="0.5"/>
+  <text x="390" y="260" text-anchor="middle" font-size="12" font-weight="500" fill="#00e5a0">WebSocket 服务器</text>
+  <text x="390" y="280" text-anchor="middle" font-size="11" fill="#8888aa">ws 库</text>
+  <text x="390" y="300" text-anchor="middle" font-size="10" fill="#8888aa">实时消息推送</text>
+  <text x="390" y="320" text-anchor="middle" font-size="10" fill="#8888aa">心跳检测 25s</text>
+  <text x="390" y="340" text-anchor="middle" font-size="10" fill="#8888aa">自动重连</text>
+
+  <!-- 业务逻辑层 -->
+  <rect x="520" y="240" width="100" height="110" rx="8" fill="#0d0d14" stroke="#00e5a0" stroke-width="0.5"/>
+  <text x="570" y="260" text-anchor="middle" font-size="12" font-weight="500" fill="#00e5a0">业务逻辑</text>
+  <text x="570" y="280" text-anchor="middle" font-size="10" fill="#8888aa">阅后即焚</text>
+  <text x="570" y="295" text-anchor="middle" font-size="10" fill="#8888aa">口令加密</text>
+  <text x="570" y="310" text-anchor="middle" font-size="10" fill="#8888aa">24h过期</text>
+  <text x="570" y="325" text-anchor="middle" font-size="10" fill="#8888aa">IP限流</text>
+  <text x="570" y="340" text-anchor="middle" font-size="10" fill="#8888aa">房间管理</text>
+
+  <!-- 数据层 -->
+  <line x1="340" y1="370" x2="340" y2="400" stroke="#00e5a0" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="120" y="400" width="440" height="90" rx="12" fill="#1a1a28" stroke="#ffaa00" stroke-width="0.8"/>
+  <text x="340" y="422" text-anchor="middle" font-size="13" font-weight="500" fill="#ffaa00">数据存储层</text>
+
+  <!-- JSON 文件 -->
+  <rect x="160" y="440" width="160" height="35" rx="6" fill="#13131e" stroke="#ffaa00" stroke-width="0.5"/>
+  <text x="240" y="462" text-anchor="middle" font-size="12" fill="#e8e8f5">messages.json</text>
+
+  <!-- 内存 -->
+  <rect x="360" y="440" width="160" height="35" rx="6" fill="#13131e" stroke="#ffaa00" stroke-width="0.5"/>
+  <text x="440" y="462" text-anchor="middle" font-size="12" fill="#e8e8f5">rooms Map (内存)</text>
+</svg>
+    </div>
+    
+    <h3>5.2 路由设计</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>路径</th><th>方法</th><th>说明</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>/</code></td><td>GET</td><td>首页（index.html）</td></tr>
+          <tr><td><code>/{roomCode}</code></td><td>GET</td><td>聊天室（chat.html）</td></tr>
+          <tr><td><code>/msg/{msgId}</code></td><td>GET</td><td>飘飘瓶留言页（msg.html）</td></tr>
+          <tr><td><code>/api/messages</code></td><td>POST</td><td>创建留言</td></tr>
+          <tr><td><code>/api/messages/:id</code></td><td>GET</td><td>读取留言</td></tr>
+          <tr><td><code>/api/messages/:id</code></td><td>DELETE</td><td>销毁留言</td></tr>
+          <tr><td><code>/api/messages/:id/verify</code></td><td>POST</td><td>验证口令</td></tr>
+          <tr><td><code>/api/messages/:id/replies</code></td><td>POST</td><td>发送回复</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 六、匿名聊天室 -->
+  <section class="section" id="section7">
+    <h2><span class="num">六</span>匿名聊天室</h2>
+    
+    <h3>6.1 进入房间</h3>
+    <div class="module-card">
+      <h4>🎯 入口方式</h4>
+      <ul class="steps">
+        <li><strong>随机进入</strong>：点击「随机进入房间」，前端生成 6 位随机房间号</li>
+        <li><strong>指定进入</strong>：输入 4-8 位房间号，点击「进入」</li>
+      </ul>
+    </div>
+
+    <h4>房间号规则</h4>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>属性</th><th>值</th></tr></thead>
+        <tbody>
+          <tr><td>长度</td><td>4-8 位</td></tr>
+          <tr><td>字符</td><td>仅允许 <code>a-z</code> 和 <code>0-9</code>（小写化处理）</td></tr>
+          <tr><td>格式</td><td><code>/^[a-z0-9]{4,8}$/</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h4>昵称生成</h4>
+    <p>格式：<code>[形容词] + [名词]</code>（如「沉默的狐狸」「流浪的繁星」）</p>
+    <ul>
+      <li>形容词库：30 个（如「温柔的」「孤独的」「遥远的」）</li>
+      <li>名词库：30 个（如「狐狸」「灰狼」「白鲸」）</li>
+      <li>重复检测：与当前房间已用昵称去重</li>
+    </ul>
+
+    <h3>6.2 WebSocket 通信协议</h3>
+    
+    <h4>客户端 → 服务器消息</h4>
+    <pre><code>// 加入房间
+{ type: 'join', room: 'abc123', nick: '沉默的狐狸' }
+
+// 发送文字消息
+{ type: 'msg', text: '你好！', burn: 10, msgId: '1712345678_abc' }
+
+// 发送图片
+{ type: 'img', imgData: 'data:image/jpeg;base64,...', burn: 10, msgId: '...' }</code></pre>
+
+    <h4>服务器 → 客户端消息</h4>
+    <pre><code>// 加入成功
+{ type: 'joined', id: 42, nick: '沉默的狐狸', count: 3 }
+
+// 文字消息
+{ type: 'msg', nick: '流浪的繁星', text: '你好', burn: 10, ts: 1712345678000, fromId: 43, msgId: '...' }
+
+// 图片消息
+{ type: 'img', nick: '...', imgData: '...', burn: 10, ts: ..., fromId: 43, msgId: '...' }
+
+// 在线人数更新
+{ type: 'online', count: 5, nicks: ['沉默的狐狸', '流浪的繁星', ...] }
+
+// 系统消息
+{ type: 'system', text: '房间人数已满' }</code></pre>
+
+    <h3>6.3 阅后即焚机制</h3>
+    <div class="module-card">
+      <h4>🔥 消息生命周期</h4>
+      <ul class="steps">
+        <li>发送消息时选择「消失时间」（3s / 10s / 30s / 60s / 关闭）</li>
+        <li>接收方看到消息倒计时</li>
+        <li>倒计时归零后，消息播放消散动画并从 DOM 移除</li>
+      </ul>
+    </div>
+
+    <h4>消失动画参数</h4>
+    <pre><code>.msg-wrap.burning {
+  transition: opacity .45s ease, transform .45s ease, filter .45s ease;
+  opacity: 0;
+  transform: scale(.88) translateY(-4px);
+  filter: blur(6px);
+}</code></pre>
+
+    <h3>6.4 图片发送</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>限制项</th><th>值</th></tr></thead>
+        <tbody>
+          <tr><td>格式</td><td>仅支持 <code>image/*</code>（自动转为 Base64 JPEG）</td></tr>
+          <tr><td>最长边</td><td>≤ 1200px</td></tr>
+          <tr><td>压缩质量</td><td>0.78</td></tr>
+          <tr><td>最终大小</td><td>≤ 700KB（含 Base64 开销）</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>6.5 房间管理</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>配置项</th><th>值</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td><code>ROOM_TTL_MS</code></td><td>5 分钟</td><td>房间无人后保留时间</td></tr>
+          <tr><td><code>MAX_ROOMS</code></td><td>2000</td><td>服务器最大房间数</td></tr>
+          <tr><td><code>MAX_CLIENTS_PER_ROOM</code></td><td>50</td><td>每房间最大人数</td></tr>
+          <tr><td><code>PING_INTERVAL</code></td><td>25 秒</td><td>WebSocket 心跳间隔</td></tr>
+          <tr><td><code>PING_TIMEOUT</code></td><td>10 秒</td><td>未响应踢出时间</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>6.6 聊天室 UI</h3>
+    <div class="feature-grid">
+      <div class="feature-item">📌 <strong>顶部栏</strong> — 房间号 + 在线人数 + 分享按钮</div>
+      <div class="feature-item">💬 <strong>聊天区</strong> — 消息列表 + 空状态引导</div>
+      <div class="feature-item">👥 <strong>在线成员</strong> — 右侧浮动显示在线昵称</div>
+      <div class="feature-item">✏️ <strong>底部输入</strong> — 消失时间 + 昵称 + 输入框 + 表情 + 图片</div>
+    </div>
+  </section>
+
+  <!-- 七、飘飘瓶留言 -->
+  <section class="section" id="section8">
+    <h2><span class="num">七</span>飘飘瓶留言</h2>
+    
+    <h3>7.1 创建留言</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td><code>content</code></td><td>textarea</td><td>留言内容，≤ 5000 字</td></tr>
+          <tr><td><code>self_destruct</code></td><td>checkbox</td><td>是否阅后即焚</td></tr>
+          <tr><td><code>destruction_delay</code></td><td>select</td><td>阅后即焚延迟（10s/30s/60s/5min）</td></tr>
+          <tr><td><code>password</code></td><td>password</td><td>可选口令，≥ 4 位</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h4>API 调用示例</h4>
+    <pre><code>POST /api/messages
+Content-Type: application/json
+
+{
+  "content": "写下想说的话...",
+  "self_destruct": true,
+  "destruction_delay": 10,
+  "password": "1234"
+}
+
+// 响应
+{
+  "id": "aB3xYz12",
+  "expires_at": "2026-05-02T11:29:53.000Z",
+  "has_password": true
+}</code></pre>
+
+    <h3>7.2 口令保护</h3>
+    <div class="module-card">
+      <h4>🔐 安全机制</h4>
+      <ul>
+        <li>口令 SHA256 哈希后存储（明文不落盘）</li>
+        <li>验证时对比哈希值</li>
+        <li>错误不提示「存在但需口令」，避免枚举攻击</li>
+      </ul>
+    </div>
+
+    <h3>7.3 阅后即焚（飘飘瓶）</h3>
+    <div class="module-card">
+      <h4>⏱️ 触发时机</h4>
+      <p>首次查看时启动倒计时</p>
+    </div>
+
+    <h4>销毁时机</h4>
+    <div class="feature-grid">
+      <div class="feature-item"><span class="tag tag-danger">🔥</span>阅后即焚消息：查看后定时销毁</div>
+      <div class="feature-item"><span class="tag tag-warning">⏰</span>普通留言：24 小时后销毁</div>
+      <div class="feature-item"><span class="tag tag-info">🗑️</span>手动销毁：用户点击「销毁」按钮</div>
+    </div>
+
+    <h3>7.4 飘飘瓶 UI</h3>
+    <div class="feature-grid">
+      <div class="feature-item">🔑 <strong>口令验证态</strong> — 显示密码输入框</div>
+      <div class="feature-item">📝 <strong>正常态</strong> — 显示留言内容 + 回复列表</div>
+      <div class="feature-item">💀 <strong>销毁态</strong> — 显示「已销毁」提示</div>
+    </div>
+  </section>
+
+  <!-- 八、安全机制 -->
+  <section class="section" id="section9">
+    <h2><span class="num">八</span>安全机制</h2>
+    
+    <h3>8.1 限流防护</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>配置</th><th>值</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td><code>RATE_LIMIT</code></td><td>10 次/分钟</td><td>每 IP 最大操作频率</td></tr>
+          <tr><td><code>RATE_WINDOW</code></td><td>60 秒</td><td>时间窗口</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>8.2 输入校验</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>检查项</th><th>限制</th></tr></thead>
+        <tbody>
+          <tr><td>留言内容</td><td>非空，≤ 5000 字</td></tr>
+          <tr><td>回复内容</td><td>非空，≤ 2000 字</td></tr>
+          <tr><td>房间号</td><td><code>/^[a-z0-9]{4,8}$/</code></td></tr>
+          <tr><td>昵称</td><td>截断至 24 字符</td></tr>
+          <tr><td>消息文本</td><td>截断至 500 字符</td></tr>
+          <tr><td>图片大小</td><td>≤ 700KB（Base64）</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>8.3 路径遍历防护</h3>
+    <pre><code>// server.js
+const filePath = path.join(__dirname, urlPath);
+if (!filePath.startsWith(__dirname)) {
+  res.writeHead(403); res.end('Forbidden'); return;
+}</code></pre>
+
+    <h3>8.4 密码安全</h3>
+    <div class="feature-item">🔒 口令使用 <strong>SHA256</strong> 单向哈希（不可逆），明文口令仅存在于用户本地</div>
+  </section>
+
+  <!-- 九、部署方案 -->
+  <section class="section" id="section10">
+    <h2><span class="num">九</span>部署方案</h2>
+    
+    <h3>9.1 本地开发</h3>
+    <pre><code># 启动服务器
+& "C:\Users\Administrator\.workbuddy\binaries\node\versions\20.18.0\node-v20.18.0-win-x64\node.exe" "c:/Users/Administrator/WorkBuddy/20260324091103/server.js"</code></pre>
+
+    <h3>9.2 内网穿透（natapp）</h3>
+    <pre><code>& "C:/Users/Administrator/Desktop/natapp.exe" -log stdout -authtoken 16dd3e13f4263f9e
+# 穿透地址：http://s9376924.natappfree.cc</code></pre>
+
+    <h3>9.3 Docker 部署（ModelScope 创空间）</h3>
+    <pre><code>FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+EXPOSE 3000
+CMD ["node", "server.js"]</code></pre>
+  </section>
+
+  <!-- 十、API 文档 -->
+  <section class="section" id="section11">
+    <h2><span class="num">十</span>API 文档</h2>
+    
+    <!-- GitNexus API 流程分析图 -->
+    <div class="svg-wrap">
+    <svg viewBox="0 0 680 460" width="100%" role="img" xmlns="http://www.w3.org/2000/svg">
+  <title>飘飘瓶 API 流程分析</title>
+  <desc>飘飘瓶系统的 API 请求流程和数据处理逻辑</desc>
+  <defs>
+    <marker id="arrow2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+
+  <!-- 标题 -->
+  <text x="340" y="30" text-anchor="middle" font-size="15" font-weight="500" fill="#00e5ff">飘飘瓶 API 流程分析</text>
+
+  <!-- API 端点卡片 -->
+  <rect x="40" y="55" width="600" height="390" rx="12" fill="#1a1a28" stroke="#252538" stroke-width="0.5"/>
+
+  <!-- POST /api/messages -->
+  <rect x="60" y="75" width="260" height="70" rx="8" fill="#13131e" stroke="#00e5ff" stroke-width="0.5"/>
+  <text x="190" y="95" text-anchor="middle" font-size="12" font-weight="500" fill="#00e5ff">POST /api/messages</text>
+  <text x="190" y="115" text-anchor="middle" font-size="10" fill="#8888aa">创建新留言</text>
+  <text x="190" y="132" text-anchor="middle" font-size="9" fill="#00e5ff">content, self_destruct, password</text>
+
+  <!-- GET /api/messages/:id -->
+  <rect x="360" y="75" width="260" height="70" rx="8" fill="#13131e" stroke="#00e5ff" stroke-width="0.5"/>
+  <text x="490" y="95" text-anchor="middle" font-size="12" font-weight="500" fill="#00e5ff">GET /api/messages/:id</text>
+  <text x="490" y="115" text-anchor="middle" font-size="10" fill="#8888aa">读取留言内容</text>
+  <text x="490" y="132" text-anchor="middle" font-size="9" fill="#00e5ff">阅后即焚触发, 口令验证</text>
+
+  <!-- POST /api/messages/:id/verify -->
+  <rect x="60" y="165" width="260" height="70" rx="8" fill="#13131e" stroke="#00e5a0" stroke-width="0.5"/>
+  <text x="190" y="185" text-anchor="middle" font-size="12" font-weight="500" fill="#00e5a0">POST .../verify</text>
+  <text x="190" y="205" text-anchor="middle" font-size="10" fill="#8888aa">验证口令</text>
+  <text x="190" y="222" text-anchor="middle" font-size="9" fill="#00e5a0">SHA256 哈希比对</text>
+
+  <!-- POST /api/messages/:id/replies -->
+  <rect x="360" y="165" width="260" height="70" rx="8" fill="#13131e" stroke="#00e5a0" stroke-width="0.5"/>
+  <text x="490" y="185" text-anchor="middle" font-size="12" font-weight="500" fill="#00e5a0">POST .../replies</text>
+  <text x="490" y="205" text-anchor="middle" font-size="10" fill="#8888aa">发送回复</text>
+  <text x="490" y="222" text-anchor="middle" font-size="9" fill="#00e5a0">限流: 10次/分钟</text>
+
+  <!-- DELETE /api/messages/:id -->
+  <rect x="60" y="255" width="260" height="70" rx="8" fill="#13131e" stroke="#ff3366" stroke-width="0.5"/>
+  <text x="190" y="275" text-anchor="middle" font-size="12" font-weight="500" fill="#ff3366">DELETE .../:id</text>
+  <text x="190" y="295" text-anchor="middle" font-size="10" fill="#8888aa">销毁留言</text>
+  <text x="190" y="312" text-anchor="middle" font-size="9" fill="#ff3366">标记 destroyed: true</text>
+
+  <!-- 数据模型 -->
+  <rect x="360" y="255" width="260" height="170" rx="8" fill="#13131e" stroke="#c400ff" stroke-width="0.5"/>
+  <text x="490" y="275" text-anchor="middle" font-size="12" font-weight="500" fill="#c400ff">Message 数据结构</text>
+  <text x="375" y="298" font-size="9" fill="#e8e8f5">id: string (8位随机ID)</text>
+  <text x="375" y="312" font-size="9" fill="#e8e8f5">content: string</text>
+  <text x="375" y="326" font-size="9" fill="#e8e8f5">created_at: ISO8601</text>
+  <text x="375" y="340" font-size="9" fill="#e8e8f5">expires_at: ISO8601 (24h)</text>
+  <text x="375" y="354" font-size="9" fill="#e8e8f5">self_destruct: boolean</text>
+  <text x="375" y="368" font-size="9" fill="#e8e8f5">password: SHA256 hash | null</text>
+  <text x="375" y="382" font-size="9" fill="#e8e8f5">first_viewed_at: ISO8601 | null</text>
+  <text x="375" y="396" font-size="9" fill="#e8e8f5">replies: Reply[]</text>
+  <text x="375" y="410" font-size="9" fill="#e8e8f5">destroyed: boolean</text>
+
+  <!-- 流程箭头 -->
+  <line x1="190" y1="145" x2="190" y2="165" stroke="#00e5ff" stroke-width="1.5" marker-end="url(#arrow2)"/>
+  <line x1="490" y1="145" x2="490" y2="165" stroke="#00e5ff" stroke-width="1.5" marker-end="url(#arrow2)"/>
+
+  <!-- 安全特性 -->
+  <rect x="60" y="345" width="260" height="80" rx="8" fill="#13131e" stroke="#c400ff" stroke-width="0.5"/>
+  <text x="190" y="365" text-anchor="middle" font-size="12" font-weight="500" fill="#c400ff">安全特性</text>
+  <text x="75" y="385" font-size="9" fill="#e8e8f5">IP 限流 (10次/分钟)</text>
+  <text x="75" y="398" font-size="9" fill="#e8e8f5">内容长度校验 (5000字)</text>
+  <text x="75" y="411" font-size="9" fill="#e8e8f5">路径遍历防护</text>
+</svg>
+    </div>
+    
+    <h3>10.1 创建留言</h3>
+    <pre><code>POST /api/messages
+Content-Type: application/json
+
+Request Body:
+{
+  "content": string,           // 留言内容（必填，≤5000字）
+  "self_destruct": boolean,    // 是否阅后即焚
+  "destruction_delay": number, // 销毁延迟秒数（默认10）
+  "password": string | null   // 口令（可选，≥4位）
+}
+
+Response 200:
+{
+  "id": string,               // 留言ID（8位）
+  "expires_at": string,       // 过期时间（ISO格式）
+  "has_password": boolean     // 是否有口令保护
+}
+
+Response 400: { "error": "留言内容不能为空" }
+Response 429: { "error": "操作太频繁，请稍后再试" }</code></pre>
+
+    <h3>10.2 读取留言</h3>
+    <pre><code>GET /api/messages/:id
+GET /api/messages/:id/:password
+
+Response 200:
+{
+  "id": string,
+  "content": string,
+  "created_at": string,
+  "expires_at": string,
+  "self_destruct": boolean,
+  "first_viewed_at": string | null,
+  "replies": Array<{ "id", "content", "created_at" }>
+}
+
+Response 401: { "error": "需要口令", "need_password": true }
+Response 404: { "error": "留言不存在或已失效" }
+Response 410: { "error": "该留言已销毁", "destroyed": true }</code></pre>
+
+    <h3>10.3 验证口令</h3>
+    <pre><code>POST /api/messages/:id/verify
+Content-Type: application/json
+
+Request Body: { "password": string }
+
+Response 200: { "success": true, "verified": true }
+Response 401: { "success": false, "error": "口令错误" }</code></pre>
+
+    <h3>10.4 发送回复</h3>
+    <pre><code>POST /api/messages/:id/replies
+Content-Type: application/json
+
+Request Body:
+{
+  "content": string,  // 回复内容（≤2000字）
+  "password": string  // 若主留言有口令则必填
+}
+
+Response 200:
+{
+  "success": true,
+  "reply": { "id", "content", "created_at" }
+}</code></pre>
+
+    <h3>10.5 销毁留言</h3>
+    <pre><code>DELETE /api/messages/:id
+
+Response 200: { "success": true, "message": "留言已销毁" }
+Response 404: { "error": "留言不存在" }</code></pre>
+  </section>
+
+  <!-- 十一、配置参数 -->
+  <section class="section" id="section12">
+    <h2><span class="num">十一</span>配置参数汇总</h2>
+    
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>参数</th><th>值</th><th>位置</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td><code>PORT</code></td><td>3000</td><td>server.js</td><td>服务器端口</td></tr>
+          <tr><td><code>ROOM_TTL_MS</code></td><td>5 分钟</td><td>server.js</td><td>房间存活时间</td></tr>
+          <tr><td><code>PING_INTERVAL</code></td><td>25 秒</td><td>server.js</td><td>心跳间隔</td></tr>
+          <tr><td><code>PING_TIMEOUT</code></td><td>10 秒</td><td>server.js</td><td>心跳超时</td></tr>
+          <tr><td><code>MAX_MSG_LEN</code></td><td>500</td><td>server.js</td><td>文字消息最大字符</td></tr>
+          <tr><td><code>MAX_IMG_BYTES</code></td><td>700KB</td><td>server.js</td><td>图片最大字节</td></tr>
+          <tr><td><code>MAX_ROOMS</code></td><td>2000</td><td>server.js</td><td>最大房间数</td></tr>
+          <tr><td><code>RATE_LIMIT</code></td><td>10 次</td><td>server.js</td><td>IP 限流次数</td></tr>
+          <tr><td><code>RATE_WINDOW</code></td><td>60 秒</td><td>server.js</td><td>IP 限流窗口</td></tr>
+          <tr><td><code>IMG_MAX_SIDE</code></td><td>1200px</td><td>chat.html</td><td>图片最长边</td></tr>
+          <tr><td><code>IMG_QUALITY</code></td><td>0.78</td><td>chat.html</td><td>JPEG 压缩质量</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 页脚 -->
+  <footer class="footer">
+    <p>本文档由 WorkBuddy AI 助手生成 | 项目：匿名聊天室 v1.0.0</p>
+  </footer>
+
+</main>
+
+<script>
+  // 滚动高亮
+  const tocItems = document.querySelectorAll('.toc-item');
+  const sections = document.querySelectorAll('.section');
+
+  function highlightTOC() {
+    let current = '';
+    sections.forEach(section => {
+      const sectionTop = section.offsetTop;
+      if (window.scrollY >= sectionTop - 100) {
+        current = section.getAttribute('id');
+      }
+    });
+    tocItems.forEach(item => {
+      item.classList.remove('active');
+      if (item.getAttribute('href') === '#' + current) {
+        item.classList.add('active');
+      }
+    });
+  }
+
+  window.addEventListener('scroll', highlightTOC);
+  highlightTOC();
+</script>
+
+</body>
+</html>
